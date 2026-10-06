@@ -21,13 +21,25 @@ export function InfoIcon({ size = 16, className }: IconProps) {
   );
 }
 
+// Lucide "pickaxe" (MIT). Renders cleanly at small sizes.
 export function PickaxeIcon({ size = 16, className }: IconProps) {
   return (
-    <svg {...base(size)} className={className}>
-      <path d="M14 6c2.5-1 5 .2 6 2-2 .3-3.3 1-4.3 2.2" />
-      <path d="M8 10c-1 1-1.8 2.4-2.4 4.4C7.6 13.2 9 12.4 10 11.4" />
-      <path d="M10.5 13.5l-4.8 4.8a1.5 1.5 0 0 0 2.1 2.1l4.8-4.8z" />
-      <path d="M16 8l3-3" />
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.7}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <path d="M14.531 12.469 6.619 20.38a1 1 0 1 1-3-3l7.912-7.912" />
+      <path d="M15.686 4.314A12.5 12.5 0 0 0 5.461 2.958 1 1 0 0 0 5.58 4.71a22 22 0 0 1 6.318 3.393" />
+      <path d="M17.7 3.7a1 1 0 0 0-1.4 1.4 12.5 12.5 0 0 0 1.408 10.257 1 1 0 0 0 1.752-.118 22 22 0 0 1 3.393-6.318 12.5 12.5 0 0 1-6.5-6.5" />
+      <path d="M12 15.5 8.5 19" />
+      <path d="M9 12 4.5 7.5" />
     </svg>
   );
 }
