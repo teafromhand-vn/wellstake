@@ -1,1248 +1,471 @@
 # Wellstake V1 — AI / Code Agent Implementation Specification
 
-**Version:** 1.0  
-**Source of truth:** `01_Wellstake_V1_SRS.docx`  
-**Test specification:** `03_Wellstake_V1_TEST_SPEC.md`  
-**Chain:** Optimism  
-**Settlement asset:** USDC  
-**Share token:** WSK
+**Version:** 2.0
+**Source of truth:** the deployed contracts in `src/`
+**Test specification:** `03_Wellstake_V1_TEST_SPEC.md`
+**Chain:** EVM (reference deployment: Arc Testnet, chain 5042002; target: Optimism)
+**Settlement asset:** ERC-20 quote token, 6 decimals (USDC or a test quote token)
+**Share token:** WSK / tWSK (deploy-time configurable name + symbol)
+**Frontend:** `frontend/` (Vite + React + wagmi, deployable to Vercel)
 
 ---
 
 ## 1. Purpose
 
-This document translates the Wellstake V1 SRS into an implementation-oriented specification for an AI coding agent or Solidity developer.
+This document describes the **as-built** Wellstake V1 system implemented in `src/`, so that an AI agent
+or developer can extend, audit, or redeploy it consistently.
 
-The agent must implement the externally observable behavior defined here and in the SRS.
-
-When an implementation detail is not explicitly required, choose a simple, auditable, secure implementation rather than adding unnecessary architecture.
-
-Do not introduce new product behavior without an explicit requirement.
+It reflects the current architecture, which supersedes the earlier V1 draft. Where this document and
+the code disagree, **the code is authoritative**.
 
 ---
 
-# 2. V1 Architecture
+## 2. Architecture Overview
 
-V1 consists of three contracts:
+V1 consists of four contracts and one off-chain role:
 
-1. `WellstakeToken`
-2. `WellstakeVault`
-3. `PendingRequestNFT`
+1. `LiquidWallet` — the primary, user-facing contract. Handles **all** mint/redeem activity.
+2. `WellstakeVault` — a thin **investment pool**. Moves idle USDC out to strategy and back.
+3. `WellstakeToken` (WSK / tWSK) — the ERC-20 share token.
+4. `PendingRequestNFT` — a **transferable** claim ticket per request.
+5. `manager` (EOA) — configures the fund (finalizes epochs, winds down).
+6. `vaultWallet` (EOA) — operates the investment pool.
 
-The Vault is the only WSK minter/burner.
+### 2.1 Deployment / linkage
 
-The Vault owns the request/epoch accounting.
+- `LiquidWallet` is deployed first. In its constructor it **deploys** `WellstakeToken` and
+  `PendingRequestNFT`, both with authority = the `LiquidWallet`. It also reads the settlement ERC-20 and
+  the `manager` / `vaultWallet` addresses.
+- `WellstakeVault` is deployed with `(usdc, liquidWallet, vaultWallet)`.
+- The `LiquidWallet` is then linked to the Vault once via `setVault(vault)` (manager-only), enabling the
+  Vault to `withdraw` idle USDC from the LiquidWallet.
 
-The Pending NFT is a claim-ticket representation and is not the source of economic truth.
-
----
-
-# 3. Fixed V1 Configuration
-
-## 3.1 Token
-
-- Name: `Wellstake`
-- Symbol: `WSK`
-- Decimals: `6`
-
-## 3.2 Settlement asset
-
-- USDC on Optimism only.
-- USDC decimals: `6`.
-- The USDC address is fixed for V1.
-- No generic ERC-20 settlement asset abstraction is required.
-
-## 3.3 Initial NAV
-
-Initial NAV:
-
-```solidity
-38_462
+```
+LiquidWallet ──deploys──▶ WellstakeToken (authority = LiquidWallet)
+             ──deploys──▶ PendingRequestNFT (authority = LiquidWallet)
+             ──setVault─▶ WellstakeVault ──withdraw()──▶ (pull USDC) ──▶ strategy → returnFunds()
 ```
 
-in 6-decimal USDC/WSK units.
-
-This represents:
-
-```text
-0.038462 USDC / WSK
-```
-
-The initial NAV may be represented as a compile-time constant.
+The Vault plays **no** role in mint/redeem accounting.
 
 ---
 
-# 4. Immutability Requirements
+## 3. Fixed Configuration
 
-V1 is non-upgradeable.
+### 3.1 Share token
 
-Do not use:
+- Name / symbol: deploy-time (`WellstakeToken(name_, symbol_)`); reference test values:
+  `testWellstake` / `tWSK`.
+- Decimals: `6`.
+- Mint/burn authority: `LiquidWallet` only.
 
-- Transparent proxy
-- UUPS proxy
-- Beacon proxy
-- Upgradeable implementation
-- Upgrade admin
+### 3.2 Settlement asset
 
-The following configuration values are fixed for V1:
+- Any standard ERC-20 with **6 decimals** (USDC, or a `TestQuoteToken` / `MockUSDC` on testnets).
+- Address is fixed at deploy time (immutable on `LiquidWallet` and `WellstakeVault`).
+- `NAV_SCALE = 1e6` assumes 6 decimals; a token with different decimals requires code change.
 
-- manager
-- USDC
-- vaultWallet
-- liquidWallet
-- feeWallet
-- WSK Vault authority
-
-Do not implement setters for these values.
-
-`PendingRequestNFT` is intentionally NOT required to be immutable.
-
----
-
-# 5. Contract Responsibilities
-
-## 5.1 WellstakeToken
-
-Responsibilities:
-
-- ERC-20 WSK token.
-- 6 decimals.
-- Vault-only mint.
-- Vault-only burn.
-- Normal ERC-20 transfer.
-- Normal `transferFrom`.
-- Normal `approve`.
-- Transfers remain enabled after Vault wind-down.
-
-The token must not depend on Vault `paused` state to block normal ERC-20 transfers.
-
----
-
-## 5.2 WellstakeVault
-
-Responsibilities:
-
-- Hold pending mint USDC.
-- Hold pending redeem WSK.
-- Create requests.
-- Assign requests to epochs.
-- Finalize epoch NAV.
-- Mint WSK for successful mint claims.
-- Burn WSK for successful redeem claims.
-- Pay redemption USDC from liquidWallet.
-- Transfer redeem fee to feeWallet.
-- Create/burn Pending Request NFTs.
-- Execute single and batch claims.
-- Execute irreversible wind-down.
-
----
-
-## 5.3 PendingRequestNFT
-
-Responsibilities:
-
-- One shared NFT collection for mint and redeem requests.
-- Token ID equals requestId.
-- Non-transferable.
-- Minted when request is created.
-- Burned on successful claim.
-
-The NFT is a claim-ticket UX/indexing layer.
-
-The Vault request record is authoritative.
-
----
-
-# 6. Suggested Core Data Structures
-
-The exact storage packing is an implementation choice, but the following logical data must exist.
-
-## 6.1 Epoch
+### 3.3 Constants (`LiquidWallet`)
 
 ```solidity
+uint256 public constant INITIAL_NAV   = 38_462; // 0.038462 USDC per share, 6dp
+uint256 public constant FEE_BPS       = 50;     // 0.5% redeem fee
+uint256 public constant BPS_DENOMINATOR = 10_000;
+uint256 public constant NAV_SCALE     = 1e6;    // 6-decimal fixed point
+```
+
+---
+
+## 4. Immutability
+
+V1 is non-upgradeable. No proxy, no upgrade admin.
+
+Immutable / fixed:
+
+- `usdc`, `manager`, `vaultWallet`, `wsk`, `pendingNFT` (set in constructor).
+- No setters for any of these.
+- `vault` is set **once** via `setVault` (guard: `VaultAlreadySet`).
+
+---
+
+## 5. Contract Responsibilities
+
+### 5.1 LiquidWallet (primary)
+
+- Holds settlement USDC and pending/redeem WSK.
+- Records all requests (`mapping requests`) and epochs (`mapping epochs`).
+- Is the sole WSK minter/burner (`WellstakeToken.authority`).
+- Issues and burns `PendingRequestNFT` per request.
+- Derives and locks the per-epoch rate; settles claims.
+- Accepts manager NAV configuration; supports irreversible wind-down.
+- Lets the linked `WellstakeVault` pull idle USDC via `withdraw`.
+
+### 5.2 WellstakeVault (investment pool)
+
+- `pull(amount)` — withdraw idle USDC from the LiquidWallet to this pool (Vault calls
+  `LiquidWallet.withdraw`).
+- `invest(amount)` — forward USDC from the pool to `vaultWallet` for external deployment.
+- `returnFunds(amount)` — send USDC back to the LiquidWallet to restore redemption liquidity.
+- All functions are `onlyManager` (i.e. `vaultWallet`).
+
+### 5.3 WellstakeToken
+
+- ERC-20, 6 decimals, name/symbol from constructor.
+- `mint` / `burn` restricted to `authority` (the LiquidWallet).
+- Normal `transfer` / `transferFrom` / `approve` at all times.
+
+### 5.4 PendingRequestNFT
+
+- ERC-721, **transferable**.
+- `tokenId == requestId`.
+- `mint` / `burn` restricted to `authority` (the LiquidWallet).
+- Whoever holds the ticket at claim time receives the settlement.
+
+---
+
+## 6. Data Structures (`LiquidWallet`)
+
+```solidity
+enum RequestType { MINT, REDEEM }
+
 struct Epoch {
-    uint256 navPerToken;
+    uint256 nav;         // total fund value in USDC (6dp) reported by the manager
+    uint256 rate;        // USDC per WSK (6dp), locked when the epoch is finalized
     uint256 startBlock;
-    uint256 endBlock;
+    uint256 endBlock;    // 0 until finalized
+    bool    finalized;
+}
+
+struct Request {
+    RequestType requestType;
+    address owner;       // creator
+    uint256 epoch;       // epoch pinned at creation
+    uint256 amount;      // MINT: USDC in. REDEEM: gross WSK in.
+    uint256 fee;         // REDEEM only: WSK fee to manager
+    uint256 net;         // REDEEM only: gross - fee
+    bool    claimed;
 }
 ```
 
-An active epoch may have:
+---
 
-```text
-endBlock = 0
+## 7. Request IDs
+
+- One global counter (`nextRequestId`), shared by mint and redeem.
+- First request = `1`; `0` is invalid.
+- Increments by exactly one on each successful request; never reused.
+- Failed transactions do not consume an ID.
+- NFT `tokenId == requestId`.
+
+---
+
+## 8. Epoch Lifecycle
+
+### 8.1 Deployment
+
+- `currentEpoch = 1`.
+- Epoch 0: `nav = rate = INITIAL_NAV`, `startBlock = endBlock = deployment block`,
+  `finalized = true`.
+- Epoch 1: open (`finalized = false`), `startBlock = deployment block`, `endBlock = 0`.
+
+### 8.2 Finalize
+
+`finalizeEpoch(nav)` (manager-only):
+
+1. Computes the rate: if `totalSupply > 0`, `rate = floor(nav * 1e6 / totalSupply)`; otherwise the
+   previous rate is carried over.
+2. Locks epoch `currentEpoch`: sets `nav`, `rate`, `endBlock = block.number`, `finalized = true`.
+3. Increments `currentEpoch` and opens a new epoch (`finalized = false`).
+
+Epoch duration is not enforced on-chain.
+
+### 8.3 Wind-down
+
+`pause(finalNav)` (manager-only, irreversible):
+
+1. Finalizes `currentEpoch` with `finalNav` (same math as above).
+2. Sets `woundDown = true`; **does not** increment `currentEpoch`.
+
+After wind-down: no new mint/redeem requests; existing requests remain claimable.
+
+---
+
+## 9. NAV / Rate Rules
+
+- The manager supplies a single number: **total fund NAV in USDC**.
+- The rate is derived, not supplied: `rate = NAV * 1e6 / totalSupply`.
+- When `totalSupply == 0`, the previously stored rate is retained (initial `INITIAL_NAV`).
+- A finalized epoch's `rate` is immutable; all requests in that epoch settle at that rate.
+- There is **no** `setNav` function. Setting NAV and finalizing are the same action
+  (`finalizeEpoch` / `pause`). This guarantees an already-finalized epoch can never be mutated.
+
+---
+
+## 10. Mint Request
+
+`requestMint(amount)`:
+
+Preconditions: not wound down; `amount > 0`; caller approved `amount` USDC.
+
+Sequence:
+
+1. Assign `requestId = nextRequestId++`.
+2. Store `Request{MINT, owner = msg.sender, epoch = currentEpoch, amount, claimed = false}`.
+3. `usdc.transferFrom(msg.sender → LiquidWallet, amount)`.
+4. Mint `PendingRequestNFT(requestId)` to the owner.
+5. Emit `MintRequested(requestId, user, amount, epoch)`.
+
+WSK is **not** minted at request time.
+
+---
+
+## 11. Mint Settlement
+
+`claim(requestId)` (permissionless). Requires the request's epoch to be `finalized`.
+
+- `wskOut = floor(amount * 1e6 / epoch.rate)`; require `wskOut > 0` (else `ZeroSettlement`).
+- Mark `claimed = true`.
+- `beneficiary = pendingNFT.ownerOf(requestId)`; burn the NFT.
+- `wsk.mint(beneficiary, wskOut)`.
+- Emit `MintClaimed(requestId, beneficiary, wskOut)`.
+
+The escrowed USDC stays in the LiquidWallet as fund capital.
+
+---
+
+## 12. Redeem Request
+
+`requestRedeem(grossAmount)`:
+
+Preconditions: not wound down; `grossAmount > 0`; caller approved `grossAmount` WSK.
+
+1. `fee = floor(grossAmount * 50 / 10000)`; `net = grossAmount - fee`.
+2. Assign `requestId`; store `Request{REDEEM, owner, epoch, amount = gross, fee, net, claimed=false}`.
+3. `wsk.transferFrom(msg.sender → LiquidWallet, grossAmount)`.
+4. If `fee > 0`: `wsk.transfer(LiquidWallet → manager, fee)` (fee is **not** burned).
+5. Mint `PendingRequestNFT(requestId)`.
+6. Emit `RedeemRequested(requestId, user, gross, fee, epoch)`.
+
+WSK is **not** burned at request time; no USDC is paid.
+
+---
+
+## 13. Redeem Settlement
+
+After the request's epoch is finalized:
+
+- `usdcOut = floor(net * epoch.rate / 1e6)`; require `usdcOut > 0` (else `ZeroSettlement`).
+- Require `usdc.balanceOf(LiquidWallet) >= usdcOut` (else `InsufficientLiquidity`).
+- Mark `claimed = true`; burn the NFT.
+- `wsk.burn(LiquidWallet, net)`.
+- `usdc.transfer(beneficiary, usdcOut)`.
+- Emit `RedeemClaimed(requestId, beneficiary, usdcOut)`.
+
+If liquidity is insufficient the whole tx reverts; the request stays claimable after the manager
+replenishes the LiquidWallet (via the Vault `returnFunds` or a direct USDC transfer).
+
+---
+
+## 14. Claims
+
+- **Permissionless**: any address may call `claim` / `claimMany`.
+- Settlement always pays the **current holder** of the request NFT.
+- `requestId == 0` or `>= nextRequestId` → `RequestNotFound`.
+- Already claimed → `RequestAlreadyClaimed`.
+- Epoch not finalized → `EpochNotFinalized`.
+- The NFT is burned on successful claim (atomic with settlement).
+- The request record is retained after claim (historical data).
+
+### 14.1 claimMany
+
+- Empty array → `InvalidBatch`.
+- Caller order preserved; mint/redeem may be mixed.
+- Duplicate or already-claimed IDs revert the **entire** batch.
+- Any individual failure reverts the whole batch (atomic, no partial settlement).
+
+---
+
+## 15. PendingRequestNFT
+
+- Transferable ERC-721, `tokenId == requestId`.
+- Minted on request creation; burned by the LiquidWallet on successful claim.
+- Because it is transferable, the settlement beneficiary is the **ticket holder at claim time**, not
+  necessarily the original requester.
+- No holder approval is required for the LiquidWallet to burn it (authority role).
+
+---
+
+## 16. Investment Vault
+
+- `pull(amount)`: Vault calls `LiquidWallet.withdraw(address(usdc), amount)`; the LiquidWallet sends
+  USDC to the Vault. Only the linked `vault` may call `withdraw`.
+- `invest(amount)`: Vault sends USDC to `vaultWallet` for external strategy.
+- `returnFunds(amount)`: Vault sends USDC back to the LiquidWallet.
+- All Vault operations are `onlyManager` (`vaultWallet`).
+- The Vault does not mint/burn WSK, hold NFT, or know about requests/epochs.
+
+---
+
+## 17. Access Control
+
 ```
-
-until finalized.
-
----
-
-## 6.2 Request
-
-The logical request record must contain:
-
-```text
-requestId
-request type
-owner
-epoch
-amount information required for settlement
-claimed status
-```
-
-For redeem requests, gross, fee, and net WSK amounts must be recoverable.
-
-The exact struct packing is implementation-defined.
-
----
-
-# 7. Request IDs
-
-Use one global counter for both request types.
-
-Rules:
-
-- First valid request = `1`.
-- `0` is invalid.
-- Every successful request increments by exactly one.
-- Mint and redeem share the same counter.
-- IDs are never reused.
-- Failed transactions must not consume an ID.
-
-NFT token ID must equal request ID.
-
----
-
-# 8. Epoch Lifecycle
-
-## 8.1 Deployment
-
-Deployment creates the following logical state:
-
-```text
-Epoch 0:
-    NAV       = 38_462
-    startBlock = deployment block
-    endBlock   = deployment block
-    finalized  = yes
-
-currentEpoch = 1
-```
-
-No request belongs to Epoch 0.
-
----
-
-## 8.2 Active epoch
-
-Epoch N remains active until:
-
-```solidity
-transitionEpoch(navPerToken)
-```
-
-or:
-
-```solidity
-pause(finalNAV)
-```
-
-is executed.
-
-Epoch duration is NOT enforced on-chain.
-
----
-
-## 8.3 transitionEpoch
-
-Only manager may call.
-
-Logical sequence:
-
-```text
-1. Validate transition.
-2. Finalize current epoch NAV.
-3. Record current epoch endBlock.
-4. Increment currentEpoch.
-5. Record new epoch startBlock.
-6. New epoch has no finalized NAV yet.
-```
-
-The transition may occur:
-
-- with no requests;
-- with pending mint requests;
-- with pending redeem requests;
-- with NAV equal to previous NAV;
-- with NAV higher than previous NAV;
-- with NAV lower than previous NAV, provided the resulting NAV is otherwise valid.
-
-No minimum NAV change is required.
-
----
-
-# 9. NAV Rules
-
-## 9.1 Manual NAV
-
-The manager supplies NAV.
-
-The Vault does NOT:
-
-- calculate portfolio NAV;
-- verify portfolio assets;
-- verify solvency;
-- query an oracle;
-- verify DEX prices;
-- verify off-chain positions.
-
----
-
-## 9.2 Finality
-
-Once epoch N is finalized:
-
-```text
-navPerToken[N]
-```
-
-must never change.
-
-All requests assigned to Epoch N settle using exactly that NAV.
-
----
-
-## 9.3 Supply/NAV edge case
-
-If:
-
-```text
-totalSupply > 0
-```
-
-then finalized NAV must be positive.
-
-If:
-
-```text
-totalSupply == 0
-```
-
-and the fund is empty, zero NAV is allowed.
-
-When supply is zero, implementation must retain enough prior reference-rate information for future operations.
-
-The exact storage mechanism is implementation-defined.
-
----
-
-# 10. Mint Request
-
-## 10.1 Preconditions
-
-Require:
-
-- Vault is not wound down.
-- `amount > 0`.
-- User has sufficient USDC.
-- USDC transfer/escrow succeeds.
-
----
-
-## 10.2 State changes
-
-On successful request:
-
-```text
-1. Assign requestId.
-2. Record owner = msg.sender.
-3. Record epoch = currentEpoch.
-4. Escrow USDC in Vault.
-5. Create MINT request.
-6. Mint PendingRequestNFT(requestId).
-7. Emit MintRequested.
-```
-
-Do NOT mint WSK at request time.
-
-Do NOT send pending USDC to vaultWallet at request time.
-
----
-
-# 11. Mint Settlement
-
-A mint request may be claimed only after its epoch is finalized.
-
-Settlement conceptually calculates:
-
-```text
-WSK out = floor(pendingUSDC / epochNAV)
-```
-
-using the fixed 6-decimal accounting convention.
-
-Implementation must use safe arithmetic.
-
-The implementation should use a well-tested fixed-point multiplication/division utility where appropriate, such as OpenZeppelin `Math.mulDiv`.
-
-Do not divide before multiplying when that would lose required precision.
-
----
-
-## 11.1 Successful mint claim
-
-Logical sequence:
-
-```text
-1. Validate request exists.
-2. Validate request type = MINT.
-3. Validate not claimed.
-4. Validate request epoch is finalized.
-5. Calculate WSK amount.
-6. Require WSK amount > 0.
-7. Mark request claimed / perform protected settlement state transition.
-8. Mint WSK to request.owner.
-9. Treat escrowed USDC as settled fund capital.
-10. Burn PendingRequestNFT(requestId).
-11. Emit MintClaimed.
-```
-
-The implementation may choose a different internal ordering where required for reentrancy safety, but the transaction must be atomic.
-
-If any step fails, the entire transaction must revert.
-
----
-
-# 12. Redeem Request
-
-## 12.1 Fee
-
-Redeem fee:
-
-```text
-0.5%
-```
-
-The fee is paid in WSK.
-
-The fee is NOT burned.
-
----
-
-## 12.2 Amounts
-
-For gross WSK amount:
-
-```text
-fee = floor(gross * 0.5%)
-net = gross - fee
-```
-
-The exact fixed-point implementation must preserve the specified round-down behavior.
-
----
-
-## 12.3 State changes
-
-On successful request:
-
-```text
-1. Assign requestId.
-2. Record owner = msg.sender.
-3. Record epoch = currentEpoch.
-4. Calculate fee.
-5. Transfer fee WSK to feeWallet.
-6. Escrow net WSK in Vault.
-7. Record gross, fee, and net.
-8. Mint PendingRequestNFT(requestId).
-9. Emit RedeemRequested.
-```
-
-Do NOT burn WSK at request time.
-
-Do NOT pay USDC at request time.
-
----
-
-# 13. Redeem Settlement
-
-After epoch finalization:
-
-```text
-USDC out = floor(netWSK * epochNAV / 10^6)
-```
-
-subject to the defined 6-decimal fixed-point convention.
-
-The USDC must come from `liquidWallet`.
-
----
-
-## 13.1 Successful redeem claim
-
-Logical behavior:
-
-```text
-1. Validate request.
-2. Validate not claimed.
-3. Validate request epoch finalized.
-4. Calculate USDC output.
-5. Require output > 0.
-6. Require liquidWallet can provide required USDC.
-7. Burn net WSK.
-8. Transfer USDC from liquidWallet to request.owner.
-9. Mark request claimed.
-10. Burn PendingRequestNFT(requestId).
-11. Emit RedeemClaimed.
-```
-
-The exact ordering must be hardened against reentrancy.
-
----
-
-## 13.2 Insufficient liquidity
-
-If liquidWallet has insufficient USDC:
-
-```text
-claim() reverts
-```
-
-and:
-
-- WSK is not burned.
-- USDC is not paid.
-- request remains unclaimed.
-- NFT remains.
-
-After the manager replenishes liquidWallet, the user can retry.
-
-No partial redemption is allowed.
-
----
-
-# 14. Pending Accounting
-
-Pending operations must not prematurely affect settled accounting.
-
-## Pending mint
-
-Before claim:
-
-- USDC remains escrowed.
-- WSK is not minted.
-- settled WSK supply does not increase.
-- pending USDC is excluded from NAV fund assets.
-
-## Pending redeem
-
-Before claim:
-
-- net WSK remains escrowed.
-- WSK is not burned.
-- settled supply does not decrease.
-
-The request's economic settlement rate is determined by its finalized epoch NAV.
-
-Claim is the on-chain settlement action, not a second price-discovery event.
-
----
-
-# 15. Pending Request NFT
-
-The NFT must be:
-
-- shared by mint and redeem requests;
-- non-transferable;
-- tokenId = requestId.
-
-The NFT should not duplicate all request data.
-
-The Vault remains authoritative.
-
-On successful claim:
-
-```text
-request.claimed = true
-NFT(requestId) = burned
-```
-
-Both actions must occur atomically.
-
----
-
-# 16. Claim
-
-## 16.1 Permissionless
-
-Any address may call:
-
-```solidity
-claim(requestId)
-```
-
-The caller is not the beneficiary.
-
-Settlement always goes to:
-
-```text
-request.owner
-```
-
----
-
-## 16.2 Already claimed
-
-A claimed request must revert if claimed again.
-
----
-
-## 16.3 Request ID zero
-
-`requestId == 0` is invalid.
-
----
-
-## 16.4 Request persistence
-
-Do not delete the request record after claim.
-
-Retain historical request data.
-
-Only claimed state needs to change.
-
-This is intentional for transparency and auditability.
-
----
-
-# 17. claimMany
-
-The Vault must support:
-
-```solidity
-claimMany(uint256[] calldata requestIds)
-```
-
-Requirements:
-
-- Empty array reverts.
-- Any number of request IDs is allowed by contract logic.
-- Frontend may split large batches for gas reasons.
-- Mint and redeem requests may be mixed.
-- Caller-supplied order is preserved.
-- Duplicate IDs cause the whole batch to revert.
-- Already-claimed IDs cause the whole batch to revert.
-- Any individual settlement failure causes the whole batch to revert.
-- No partial batch settlement.
-
-Do not add sorting or prioritization.
-
----
-
-# 18. Wind-Down / Pause
-
-`pause(finalNAV)` is NOT a temporary pause.
-
-It is final V1 wind-down.
-
-Only manager may call it.
-
----
-
-## 18.1 Wind-down sequence
-
-Logical behavior:
-
-```text
-1. Require not already wound down.
-2. Finalize current epoch with finalNAV.
-3. Record current epoch endBlock.
-4. Set permanently wound-down state.
-5. Do NOT increment currentEpoch.
-```
-
----
-
-## 18.2 After wind-down
-
-Block:
-
-- new mint requests;
-- new redeem requests;
-- `transitionEpoch`;
-- any other new fund operation.
-
-Allow:
-
-- claims for requests created before wind-down;
-- mint settlement for pre-wind-down mint requests;
-- redeem settlement for pre-wind-down redeem requests;
-- normal WSK ERC-20 transfers;
-- `transferFrom`;
-- `approve`.
-
-This distinction is critical:
-
-> Wind-down blocks NEW fund operations, not settlement of existing obligations.
-
-Do not put a global `whenNotPaused` restriction around internal WSK mint/burn paths if that would prevent valid pre-wind-down claims.
-
----
-
-# 19. Wallet Semantics
-
-## 19.1 vaultWallet
-
-EOA.
-
-Used for:
-
-- portfolio assets;
-- investment capital;
-- strategy execution;
-- swaps;
-- LP;
-- farming;
-- perps;
-- other external fund activities.
-
-The Vault does not need to enforce investment strategy.
-
----
-
-## 19.2 liquidWallet
-
-Contract address.
-
-Used for:
-
-- redemption liquidity.
-
-Redeem claims pay USDC from liquidWallet.
-
-Insufficient liquidity causes claim to revert.
-
----
-
-## 19.3 feeWallet
-
-EOA.
-
-Receives:
-
-```text
-0.5% redeem fee in WSK
-```
-
-WSK held by feeWallet is ordinary WSK:
-
-- included in total supply;
-- included in NAV denominator;
-- no special exclusion;
-- if redeemed, normal fee applies.
-
----
-
-# 20. Direct Transfers
-
-## 20.1 Direct USDC to Vault
-
-Do not create a request.
-
-Do not refund automatically.
-
-Do not create a Pending NFT.
-
-The USDC remains part of fund assets and is included in NAV accounting.
-
----
-
-## 20.2 Direct WSK to Vault
-
-Do not create a redeem request.
-
-Do not automatically burn.
-
-The Vault simply holds WSK like any other ERC-20 asset.
-
-The WSK remains part of total supply.
-
-No rescue mechanism is required.
-
----
-
-# 21. Access Control
-
-V1 does not require a role framework.
-
-At minimum:
-
-```text
-manager-only:
-    transitionEpoch
-    pause/final wind-down
+manager-only (LiquidWallet):
+    setVault
+    finalizeEpoch
+    pause
+
+vault-only (LiquidWallet):
+    withdraw
+
+vaultWallet-only (WellstakeVault):
+    pull / invest / returnFunds
 
 permissionless:
-    claim
-    claimMany
+    claim / claimMany
 
 user:
-    requestMint
-    requestRedeem
+    requestMint / requestRedeem
 ```
 
-The exact function names may differ, but semantics must match.
-
 ---
 
-# 22. Security Requirements
-
-Use established audited patterns where appropriate.
-
-Recommended:
-
-- OpenZeppelin ERC-20 implementation
-- OpenZeppelin ERC-721 implementation or minimal equivalent for Pending NFT
-- OpenZeppelin `SafeERC20`
-- OpenZeppelin `Math.mulDiv`
-- OpenZeppelin reentrancy protection where external calls exist
-
-These are implementation recommendations, not new product requirements.
-
----
-
-## 22.1 Reentrancy
-
-Protect:
-
-- request functions involving token transfers;
-- claim;
-- claimMany;
-- any function that performs external token calls and mutates settlement state.
-
-A malicious token/mock must not be able to:
-
-- claim the same request twice;
-- burn/mint twice;
-- withdraw the same USDC twice;
-- bypass claimed state;
-- bypass request ownership.
-
----
-
-## 22.2 Checks-effects-interactions
-
-Settlement must be structured so that external calls cannot cause duplicate settlement.
-
-If state is updated before an external call and that external call fails, the entire transaction must revert and restore the previous state.
-
----
-
-# 23. ERC-20 Approval / Transfer Behavior
-
-WSK must behave as a normal ERC-20 except that:
-
-- only Vault can mint;
-- only Vault can burn.
-
-After wind-down:
-
-- `transfer` remains enabled;
-- `transferFrom` remains enabled;
-- `approve` remains enabled.
-
-The token must not become frozen merely because Vault is wound down.
-
----
-
-# 24. Event Requirements
-
-Recommended event declarations:
+## 18. Events
 
 ```solidity
-event MintRequested(
-    uint256 indexed requestId,
-    address indexed user,
-    uint256 usdcAmount,
-    uint256 indexed epoch
-);
+// LiquidWallet
+event VaultSet(address indexed vault);
+event EpochFinalized(uint256 indexed epoch, uint256 nav, uint256 rate, uint256 endBlock);
+event MintRequested(uint256 indexed requestId, address indexed user, uint256 usdcAmount, uint256 indexed epoch);
+event RedeemRequested(uint256 indexed requestId, address indexed user, uint256 grossWsk, uint256 feeWsk, uint256 indexed epoch);
+event MintClaimed(uint256 indexed requestId, address indexed user, uint256 wskAmount);
+event RedeemClaimed(uint256 indexed requestId, address indexed user, uint256 usdcAmount);
+event Withdrawn(address indexed token, address indexed to, uint256 amount);
+event WoundDown(uint256 indexed epoch, uint256 finalNav, uint256 endBlock);
 
-event RedeemRequested(
-    uint256 indexed requestId,
-    address indexed user,
-    uint256 wskAmount,
-    uint256 feeAmount,
-    uint256 indexed epoch
-);
-
-event EpochTransitioned(
-    uint256 indexed epoch,
-    uint256 navPerToken,
-    uint256 endBlock
-);
-
-event MintClaimed(
-    uint256 indexed requestId,
-    address indexed user,
-    uint256 wskAmount
-);
-
-event RedeemClaimed(
-    uint256 indexed requestId,
-    address indexed user,
-    uint256 wskAmount,
-    uint256 usdcAmount
-);
+// WellstakeVault
+event Pulled(uint256 amount);
+event Returned(uint256 amount);
+event Invested(address indexed to, uint256 amount);
 ```
 
-Events should be emitted only for successful state transitions.
-
-Do not emit success events for transactions that ultimately revert.
-
 ---
 
-# 25. Important State Invariants
+## 19. Errors
 
-The implementation must preserve these invariants.
+```solidity
+// LiquidWallet
+ZeroAddress, ZeroAmount, OnlyManager, OnlyVault, VaultAlreadySet, AlreadyWoundDown,
+RequestNotFound, RequestAlreadyClaimed, EpochNotFinalized, InvalidBatch,
+ZeroSettlement, InsufficientLiquidity
 
-## INV-001
+// WellstakeVault
+ZeroAddress, ZeroAmount, OnlyManager
 
-Request IDs are unique, positive, monotonically increasing.
-
-## INV-002
-
-A request's epoch never changes.
-
-## INV-003
-
-A request's owner never changes.
-
-## INV-004
-
-Finalized epoch NAV never changes.
-
-## INV-005
-
-Pending mint does not mint WSK.
-
-## INV-006
-
-Pending redeem does not burn WSK.
-
-## INV-007
-
-Redeem fee is transferred to feeWallet and is not burned.
-
-## INV-008
-
-Successful claim cannot happen twice.
-
-## INV-009
-
-Failed claim does not consume the request.
-
-## INV-010
-
-Failed claim does not permanently burn the NFT.
-
-## INV-011
-
-Batch claim is atomic.
-
-## INV-012
-
-Settlement beneficiary is request.owner.
-
-## INV-013
-
-Wind-down blocks new requests.
-
-## INV-014
-
-Wind-down does not block valid pre-wind-down claims.
-
-## INV-015
-
-WSK remains transferable after wind-down.
-
-## INV-016
-
-V1 configuration addresses cannot be replaced.
-
----
-
-# 26. Error Handling
-
-The implementation may define custom errors.
-
-Recommended logical error categories:
-
-```text
-ZeroAmount
-InvalidRequest
-RequestNotFound
-RequestAlreadyClaimed
-EpochNotFinalized
-InvalidEpoch
-OnlyManager
-AlreadyWoundDown
-ZeroSettlement
-InsufficientLiquidity
-InvalidBatch
-DuplicateRequest
-NonTransferablePendingNFT
+// WellstakeToken / PendingRequestNFT
+ZeroAddress, NotAuthority
 ```
 
-Exact names are implementation-defined.
+---
 
-Prefer custom errors over long revert strings where appropriate.
+## 20. State Invariants
+
+- INV-001 Request IDs are unique, positive, monotonically increasing.
+- INV-002 A request's epoch never changes.
+- INV-003 A request's `owner` (recorded) never changes.
+- INV-004 A finalized epoch's `rate` and `nav` never change.
+- INV-005 Pending mint does not mint WSK until claim.
+- INV-006 Pending redeem does not burn WSK until claim.
+- INV-007 The redeem fee is transferred to the manager and is not burned.
+- INV-008 A successful claim cannot happen twice.
+- INV-009 A failed claim does not consume the request.
+- INV-010 A failed claim does not burn the NFT.
+- INV-011 `claimMany` is atomic.
+- INV-012 Claim settlement is paid to the current NFT holder.
+- INV-013 Wind-down blocks new requests and epoch transitions.
+- INV-014 Wind-down does not block valid pre-wind-down claims.
+- INV-015 The redeem fee is paid to `manager` at request time.
+- INV-016 V1 configuration (`usdc`, `manager`, `vaultWallet`, token/NFT authority) cannot be replaced.
 
 ---
 
-# 27. No Cancellation / Rescue
+## 21. Rounding
 
-Do not implement:
-
-- request cancellation;
-- request ownership transfer;
-- request rescue;
-- accidental USDC refund;
-- accidental WSK rescue;
-- tiny-request rescue;
-- NFT transfer.
-
-These are explicitly outside V1.
+- All settlements round **down** (toward zero) using `Math.mulDiv`.
+- Multiplications precede divisions (`floor(a*b/d)`), avoiding precision loss.
+- Fee: `floor(gross * 50 / 10000)`.
 
 ---
 
-# 28. Tiny Settlement Edge Case
+## 22. Edge Cases
 
-A valid request may theoretically calculate to zero settlement output because of fixed-point rounding.
-
-In this case:
-
-```text
-claim reverts
-```
-
-The request remains permanently available for retry, but V1 does not require a rescue/cancel mechanism.
-
-Do not add a minimum request amount solely to solve this edge case.
+- **Zero-supply rate**: while `totalSupply == 0`, the last known rate is retained; the first mint uses
+  `INITIAL_NAV`.
+- **Zero settlement**: if the calculated output (WSK or USDC) rounds to `0`, `claim` reverts with
+  `ZeroSettlement`; the request and NFT remain.
+- **Insufficient liquidity**: redeem `claim` reverts with `InsufficientLiquidity`; nothing is burned or
+  paid; retry after replenishing.
+- **Direct transfers**: sending USDC or WSK directly to the LiquidWallet creates no request and no
+  entitlement; the tokens are simply held (USDC counts toward investment liquidity).
+- **Tiny requests**: no minimum is enforced; such requests simply may revert at claim.
 
 ---
 
-# 29. Zero NAV Request Edge Case
+## 23. Security Notes
 
-A mint request may be created while the current reference NAV is zero under the supply-zero condition.
-
-Do not reject the request solely for this reason.
-
-If the request's finalized epoch NAV results in zero settlement:
-
-```text
-claim reverts
-```
-
-Do not add a transition-time rule solely to prevent this case.
+- `claim` / `claimMany` / `requestMint` / `requestRedeem` are `nonReentrant`.
+- State (e.g. `claimed = true`) is set before external calls.
+- `SafeERC20` is used for all token movements.
+- The LiquidWallet is the sole WSK authority; the Vault cannot mint/burn or move WSK.
+- The Vault can only pull USDC from the LiquidWallet (never WSK or NFT).
 
 ---
 
-# 30. Dust
+## 24. Deployment Validation
 
-Do not require the fund to reach mathematically exact zero assets before an epoch transition.
+The deploy scripts (`script/Deploy.s.sol`, `script/DeployWithQuoteToken.s.sol`,
+`script/DeployTestnet.s.sol`) should verify:
 
-Small residual/dust assets are allowed.
-
-Do not add dust sweep functionality.
-
----
-
-# 31. Gas and Storage
-
-Prioritize:
-
-1. correctness;
-2. security;
-3. auditability;
-4. then gas optimization.
-
-Request history should remain stored.
-
-Do not delete request data merely to optimize long-term storage.
-
-Do not introduce complicated packing unless it clearly improves deployment/runtime costs without reducing readability.
+- correct chain id;
+- settlement token address (and 6 decimals);
+- `manager`, `vaultWallet`;
+- token/NFT authority = LiquidWallet;
+- `LiquidWallet.vault` linked to the `WellstakeVault`;
+- epoch 0 finalized; epoch 1 active; initial NAV.
 
 ---
 
-# 32. Contract API — Logical Surface
+## 25. Reference Deployment (Arc Testnet, chain 5042002)
 
-The final implementation should expose functionality equivalent to:
+| Contract | Address |
+|---|---|
+| LiquidWallet | `0x34EFa1dE4a3f6432d65cBACb1c77783745f6b963` |
+| WellstakeVault | `0x464aDcb56298B5226D6a4ee5F9D5ed023fA0EF6A` |
+| WellstakeToken (tWSK) | `0x4943e1Add5bAA4caf62c2aAc225445dC9465BE0a` |
+| PendingRequestNFT | `0x3C67B98454637ae21B61Df03C38Bd28e124cEb7e` |
+| USDC (settlement) | `0x3600000000000000000000000000000000000000` |
 
-```text
-requestMint(amount)
-requestRedeem(amount)
-
-claim(requestId)
-claimMany(requestIds)
-
-transitionEpoch(navPerToken)
-pause(finalNAV)
-
-read current epoch
-read epoch data
-read request data
-read configuration
-read wound-down state
-```
-
-Additional standard ERC-20 / ERC-721 functions are expected where applicable.
-
-Exact public getter names may follow the chosen Solidity design.
+Note: the Arc RPC restricts `eth_getLogs` to ~2000-block ranges and has a custom precompile that
+breaks `forge script` simulation; drive live flows with `cast`/viem instead.
 
 ---
 
-# 33. Deployment Validation
+## 26. Frontend
 
-Deployment scripts/tests should verify:
-
-- correct chain;
-- correct Optimism USDC address;
-- correct manager;
-- correct vaultWallet;
-- correct liquidWallet;
-- correct feeWallet;
-- correct token/vault linkage;
-- initial NAV;
-- Epoch 0 state;
-- active Epoch 1;
-- no proxy;
-- no upgrade admin.
-
-Deployment should fail fast if required configuration is inconsistent.
+- `frontend/`: Vite + React + TypeScript + Tailwind + wagmi/viem, injected wallet.
+- Pages: `/info` (dashboard), `/mint`, `/burn` (redeem), `/docs` (redirects to `/info`),
+  `/admin` (manager-only, `noindex`).
+- The dashboard currently renders from `src/mock.ts`; wire to chain state via the existing hooks
+  (`useVault.ts`, `useHistory.ts`, `useEpochStart.ts`).
+- Deployable to Vercel as a static site (`vercel.json` SPA rewrite).
 
 ---
 
-# 34. Test Mapping
+## 27. Explicit Non-Goals
 
-The implementation must satisfy:
-
-- `03_Wellstake_V1_TEST_SPEC.md`
-- all unit tests;
-- all edge-case tests;
-- all atomicity tests;
-- all access-control tests;
-- all invariant tests;
-- recommended fuzz tests where practical.
-
-Do not mark the implementation complete while known mandatory tests fail.
+Not part of V1: multisig/governance, upgradeability, multi-chain, multi-stablecoin settlement,
+oracle-based NAV, automatic NAV calculation, keeper settlement, partial claims, request cancellation,
+rescue, dust sweeping, strategy enforcement inside contracts.
 
 ---
 
-# 35. Explicit Non-Goals
-
-Do not implement these as part of V1 unless separately requested:
-
-- multisig;
-- governance;
-- upgradeability;
-- multi-chain;
-- multi-stablecoin;
-- oracle-based NAV;
-- automatic NAV calculation;
-- automatic settlement keeper;
-- partial claims;
-- request cancellation;
-- rescue;
-- migration to V2;
-- Velodrome integration inside Vault;
-- DeFiLlama adapter;
-- portfolio strategy enforcement.
-
----
-
-# 36. V1 → V2 Boundary
-
-V1 must remain independent.
-
-Future V2 may introduce:
-
-- new Vault;
-- new WSKv2;
-- migration contract;
-- multisig/governance;
-- better NAV infrastructure;
-- additional integrations.
-
-Do not add V2 migration state or logic to V1.
-
-V1 WSK remains transferable indefinitely, including after wind-down.
-
----
-
-# 37. Implementation Decision Rule
-
-When implementation choices are unspecified:
-
-1. Preserve SRS behavior.
-2. Preserve accounting semantics.
-3. Prefer OpenZeppelin audited primitives.
-4. Prefer simple state transitions.
-5. Prefer atomicity.
-6. Prefer explicit custom errors.
-7. Avoid unnecessary roles or abstractions.
-8. Do not create new user-facing behavior.
-9. Do not reinterpret already-settled product decisions.
-10. If two implementation choices satisfy the same requirements, choose the simpler and more auditable one.
-
----
-
-# 38. Final Implementation Checklist
-
-Before considering V1 complete:
-
-- [ ] WSK = 6 decimals.
-- [ ] USDC = 6 decimals.
-- [ ] Initial NAV = 38,462.
-- [ ] Epoch 0 finalized at deployment.
-- [ ] Epoch 1 active after deployment.
-- [ ] Epochs have no fixed duration.
-- [ ] Manager controls transitions.
-- [ ] Finalized NAV is immutable.
-- [ ] Mint USDC is escrowed in Vault.
-- [ ] Pending mint does not mint WSK.
-- [ ] Redeem fee = 0.5% WSK.
-- [ ] Redeem fee goes to feeWallet.
-- [ ] Pending redeem does not burn WSK.
-- [ ] Claims use request epoch NAV.
-- [ ] Rounding is down.
-- [ ] Safe fixed-point arithmetic is used.
-- [ ] Pending NFT tokenId = requestId.
-- [ ] Pending NFT is non-transferable.
-- [ ] Successful claim burns NFT.
-- [ ] Failed claim preserves NFT/request.
-- [ ] Claims are permissionless.
-- [ ] Settlement goes to request.owner.
-- [ ] claimMany is atomic.
-- [ ] claimMany supports mixed request types.
-- [ ] Duplicate claimMany IDs revert.
-- [ ] Empty claimMany reverts.
-- [ ] Request history remains stored.
-- [ ] Wind-down is irreversible.
-- [ ] Wind-down finalizes current epoch.
-- [ ] Wind-down creates no new epoch.
-- [ ] Existing pre-wind-down requests remain claimable.
-- [ ] New requests are blocked after wind-down.
-- [ ] New epoch transitions are blocked after wind-down.
-- [ ] WSK transfers remain active after wind-down.
-- [ ] Fixed addresses cannot be changed.
-- [ ] V1 is non-upgradeable.
-- [ ] Direct USDC transfer creates no entitlement.
-- [ ] Direct WSK transfer creates no redemption entitlement.
-- [ ] No cancellation/rescue mechanism exists.
-- [ ] Mandatory tests pass.
-- [ ] Invariants pass.
-- [ ] Fuzz/property tests do not expose accounting or settlement violations.
-
----
-
-## End of Wellstake V1 AI / Code Agent Specification
+## End of Wellstake V1 AI / Code Agent Specification (v2.0)
