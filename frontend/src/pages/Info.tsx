@@ -54,12 +54,13 @@ export function Info() {
 
       {/* Big overview: 4 key stats */}
       <div className="grid gap-4 sm:grid-cols-2">
-        <Stat
-          label={`${tr("activeEpoch")} #${d.currentEpoch.toString()}`}
-          value={start.time}
-          sub={start.date}
-          big
-        />
+        <div className="rounded-xl border border-edge bg-panel2 p-4">
+          <div className="text-xs uppercase tracking-wide text-gray-500">{tr("activeEpoch")}</div>
+          <div className="mt-1 text-4xl font-bold text-gray-100">#{d.currentEpoch.toString()}</div>
+          <div className="mt-0.5 text-xs text-gray-400">
+            {start.time} · {start.date}
+          </div>
+        </div>
         <Stat label={tr("nav")} value={`${format6(d.totalNav)} USDC`} big />
         <Stat label={tr("totalSupply")} value={`${format6(d.totalSupply)} tWSK`} big />
         <Stat
