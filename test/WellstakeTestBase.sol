@@ -74,12 +74,20 @@ abstract contract WellstakeTestBase is Test {
         liquid.setNav(nav);
     }
 
+    function _finalizeEpoch(uint256 nav) internal {
+        vm.prank(manager);
+        liquid.finalizeEpoch(nav);
+    }
+
     /// @dev Give `user` some WSK via a mint. Returns the actual WSK amount received.
+    ///      The request's epoch must be finalized before it can be claimed.
     function _giveWSK(address user, uint256 usdcAmount)
         internal
         returns (uint256 id, uint256 wskAmount)
     {
         id = _requestMint(user, usdcAmount);
+        // Finalize the open epoch so the request becomes claimable.
+        _finalizeEpoch(liquid.totalNav());
         uint256 before = wsk.balanceOf(user);
         vm.prank(user);
         liquid.claim(id);

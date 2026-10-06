@@ -21,6 +21,7 @@ contract TransferableNftTest is WellstakeTestBase {
         vm.prank(alice);
         nft.transferFrom(alice, bob, id);
 
+        _finalizeEpoch(liquid.totalNav());
         liquid.claim(id);
 
         // Bob, the holder at claim time, receives the WSK.
@@ -42,6 +43,7 @@ contract TransferableNftTest is WellstakeTestBase {
     function test_batchClaimMixed() public {
         uint256 a = _requestMint(alice, 10 * ONE);
         uint256 b = _requestMint(bob, 20 * ONE);
+        _finalizeEpoch(liquid.totalNav());
 
         uint256[] memory ids = new uint256[](2);
         ids[0] = a;
@@ -60,13 +62,14 @@ contract TransferableNftTest is WellstakeTestBase {
 
     function test_duplicateIdsRevert() public {
         uint256 a = _requestMint(alice, 10 * ONE);
+        _finalizeEpoch(liquid.totalNav());
         uint256[] memory ids = new uint256[](2);
         ids[0] = a;
         ids[1] = a;
         vm.expectRevert(LiquidWallet.RequestAlreadyClaimed.selector);
         liquid.claimMany(ids);
 
-        (,,,,, bool claimed) = liquid.requests(a);
+        (,,,,,, bool claimed) = liquid.requests(a);
         assertFalse(claimed);
     }
 
@@ -76,6 +79,7 @@ contract TransferableNftTest is WellstakeTestBase {
         (, uint256 held) = _giveWSK(bob, 1000 * ONE);
         vm.prank(bob);
         uint256 b = liquid.requestRedeem(held / 2);
+        _finalizeEpoch(liquid.totalNav());
 
         uint256 bal = usdc.balanceOf(address(liquid));
         if (bal > 0) {
@@ -89,7 +93,7 @@ contract TransferableNftTest is WellstakeTestBase {
         vm.expectRevert(LiquidWallet.InsufficientLiquidity.selector);
         liquid.claimMany(ids);
 
-        (,,,,, bool claimedA) = liquid.requests(a);
+        (,,,,,, bool claimedA) = liquid.requests(a);
         assertFalse(claimedA);
         assertEq(nft.ownerOf(a), alice);
     }

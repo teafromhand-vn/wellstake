@@ -24,6 +24,7 @@ export function useVaultData() {
         functionName: "balanceOf",
         args: [CONTRACTS.liquidWallet],
       },
+      { abi: liquidWalletAbi, address: CONTRACTS.liquidWallet, functionName: "currentEpoch" },
     ],
     query: { refetchInterval: 8000 },
   });
@@ -77,6 +78,7 @@ export function useVaultData() {
     woundDown: (data?.[5]?.result as boolean | undefined) ?? false,
     totalSupply: data?.[6]?.result as bigint | undefined,
     liquidUsdc: data?.[7]?.result as bigint | undefined,
+    currentEpoch: (data?.[8]?.result as bigint | undefined) ?? 1n,
     usdcBalance: balances.data?.[0]?.result as bigint | undefined,
     wskBalance: balances.data?.[1]?.result as bigint | undefined,
     usdcAllowance: balances.data?.[2]?.result as bigint | undefined,

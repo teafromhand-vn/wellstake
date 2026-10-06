@@ -7,6 +7,7 @@ import {
 } from "wagmi";
 import { useI18n } from "../i18n-react";
 import { Button, Card, Field } from "./Ui";
+import { useToast } from "./Toast";
 import { erc20Abi, liquidWalletAbi } from "../abi";
 import { CONTRACTS, arcTestnet } from "../config";
 import { format6, parse6, errMessage } from "../lib";
@@ -19,14 +20,14 @@ export function MintRedeem({ onDone }: { onDone: () => void }) {
   const { address } = useAccount();
   const chainId = useChainId();
   const d = useVaultData();
+  const { push } = useToast();
   const [mode, setMode] = useState<Mode>("mint");
   const [amount, setAmount] = useState("");
-  const [err, setErr] = useState<string | null>(null);
+  const [status, setStatus] = useState<string | null>(null);
 
   const { writeContractAsync, isPending } = useWriteContract();
   const [txHash, setTxHash] = useState<`0x${string}` | undefined>();
   const { isLoading: confirming, isSuccess } = useWaitForTransactionReceipt({ hash: txHash });
-  const [status, setStatus] = useState<string | null>(null);
 
   const value = parse6(amount);
   const spender = CONTRACTS.liquidWallet;
@@ -36,8 +37,16 @@ export function MintRedeem({ onDone }: { onDone: () => void }) {
   const needsApproval = allowance !== undefined && value > 0n && allowance < value;
   const onArc = chainId === arcTestnet.id;
 
+  useEffect(() => {
+    if (isSuccess && txHash) {
+      d.refetch();
+      push(tr("txSuccess"), "good");
+      onDone();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSuccess, txHash]);
+
   async function run() {
-    setErr(null);
     setStatus(null);
     try {
       if (!onArc) throw new Error(tr("switchNetwork"));
@@ -53,6 +62,7 @@ export function MintRedeem({ onDone }: { onDone: () => void }) {
           args: [spender, value],
         });
         setTxHash(hash);
+        push(tr("txSubmitted") + " " + hash.slice(0, 10) + "...", "info");
         return;
       }
 
@@ -72,19 +82,12 @@ export function MintRedeem({ onDone }: { onDone: () => void }) {
               args: [value],
             });
       setTxHash(hash);
+      push(tr("txSubmitted") + " " + hash.slice(0, 10) + "...", "info");
     } catch (e) {
       setStatus(null);
-      setErr(errMessage(e));
+      push(errMessage(e), "bad");
     }
   }
-
-  useEffect(() => {
-    if (isSuccess && txHash) {
-      d.refetch();
-      onDone();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isSuccess, txHash]);
 
   return (
     <Card title={tr("mint") + " / " + tr("redeem")}>
@@ -95,7 +98,6 @@ export function MintRedeem({ onDone }: { onDone: () => void }) {
             setMode("mint");
             setAmount("");
             setStatus(null);
-            setErr(null);
           }}
         >
           {tr("mint")}
@@ -106,14 +108,15 @@ export function MintRedeem({ onDone }: { onDone: () => void }) {
             setMode("redeem");
             setAmount("");
             setStatus(null);
-            setErr(null);
           }}
         >
           {tr("redeem")}
         </button>
       </div>
 
-      <p className="mb-3 text-xs text-gray-400">{mode === "mint" ? tr("mintDesc") : tr("redeemDesc")}</p>
+      <p className="mb-3 text-xs text-gray-400">
+        {mode === "mint" ? tr("mintDesc") : tr("redeemDesc")}
+      </p>
 
       <Field
         label={tr("amount")}
@@ -137,20 +140,8 @@ export function MintRedeem({ onDone }: { onDone: () => void }) {
         {(isPending || confirming) && <span className="text-xs text-gray-400">{status ?? tr("loading")}</span>}
       </div>
 
-      {err && <div className="mt-3 rounded-lg border border-bad/40 bg-bad/10 p-2 text-xs text-bad">{err}</div>}
-      {txHash && !err && (
-        <div className="mt-3 text-xs text-gray-400">
-          {confirming ? tr("loading") : isSuccess ? tr("txSuccess") : tr("txSubmitted")}{" "}
-          <a
-            className="text-accent underline"
-            href={`https://explorer.testnet.arc.io/tx/${txHash}`}
-            target="_blank"
-            rel="noreferrer"
-          >
-            {txHash.slice(0, 10)}...
-          </a>
-        </div>
-      )}
+      <p className="mt-3 text-[11px] text-gray-500">{tr("claimNotReady")}</p>
     </Card>
   );
 }
+

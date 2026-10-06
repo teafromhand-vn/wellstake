@@ -12,11 +12,12 @@ import {PendingRequestNFT} from "./PendingRequestNFT.sol";
 /// @title LiquidWallet
 /// @notice Primary user-facing contract. It handles ALL mint and redeem activity:
 ///         it holds user USDC/WSK and redemption liquidity, issues and burns the PendingRequestNFT,
-///         is the sole WSK minter/burner, and pays out settlements. The manager sets the fund NAV
-///         here; the rate (USDC per WSK) is derived as NAV / totalSupply.
-/// @dev Requests are recorded here (not in the Vault). The investment Vault may pull idle USDC via
-///      `withdraw` and is expected to return funds later. Claims are permissionless and always pay
-///      the current holder of the request NFT.
+///         is the sole WSK minter/burner, and pays out settlements.
+/// @dev Epoch model: the manager finalizes an epoch with a NAV; the rate (USDC per WSK) is derived
+///      as NAV / totalSupply and locked for that epoch. Every request is pinned to the active
+///      epoch at creation and settles at that epoch's locked rate once the epoch is finalized.
+///      Requests are recorded here (not in the Vault). The investment Vault may pull idle USDC via
+///      `withdraw`. Claims are permissionless and always pay the current holder of the request NFT.
 contract LiquidWallet is ReentrancyGuard {
     using SafeERC20 for IERC20;
 
@@ -30,9 +31,18 @@ contract LiquidWallet is ReentrancyGuard {
         REDEEM
     }
 
+    struct Epoch {
+        uint256 nav; // total fund value (USDC, 6dp) reported by the manager
+        uint256 rate; // USDC per WSK (6dp) locked when finalized
+        uint256 startBlock;
+        uint256 endBlock;
+        bool finalized;
+    }
+
     struct Request {
         RequestType requestType;
         address owner;
+        uint256 epoch;
         uint256 amount; // MINT: USDC in. REDEEM: gross WSK in.
         uint256 fee; // REDEEM only: WSK fee to manager.
         uint256 net; // REDEEM only: WSK net of fee.
@@ -48,25 +58,34 @@ contract LiquidWallet is ReentrancyGuard {
     /// @notice Investment vault allowed to pull idle USDC. Set once after deployment.
     address public vault;
 
-    /// @notice Fund NAV in USDC (6dp) as reported by the manager.
+    /// @notice Active epoch index. Epoch 0 is finalized at deployment; epoch 1 is active.
+    uint256 public currentEpoch;
+    /// @notice Latest manager-reported NAV and derived rate (for the open epoch).
     uint256 public totalNav;
-    /// @notice USDC per WSK (6dp), derived from NAV and total supply.
     uint256 public rate;
     bool public woundDown;
 
     uint256 public nextRequestId = 1;
+    mapping(uint256 => Epoch) public epochs;
     mapping(uint256 => Request) public requests;
 
     event VaultSet(address indexed vault);
-    event NavSet(uint256 totalNav, uint256 rate);
-    event MintRequested(uint256 indexed requestId, address indexed user, uint256 usdcAmount);
+    event NavSet(uint256 indexed epoch, uint256 totalNav, uint256 rate);
+    event EpochFinalized(uint256 indexed epoch, uint256 nav, uint256 rate, uint256 endBlock);
+    event MintRequested(
+        uint256 indexed requestId, address indexed user, uint256 usdcAmount, uint256 indexed epoch
+    );
     event RedeemRequested(
-        uint256 indexed requestId, address indexed user, uint256 grossWsk, uint256 feeWsk
+        uint256 indexed requestId,
+        address indexed user,
+        uint256 grossWsk,
+        uint256 feeWsk,
+        uint256 indexed epoch
     );
     event MintClaimed(uint256 indexed requestId, address indexed user, uint256 wskAmount);
     event RedeemClaimed(uint256 indexed requestId, address indexed user, uint256 usdcAmount);
     event Withdrawn(address indexed token, address indexed to, uint256 amount);
-    event WoundDown(uint256 finalNav);
+    event WoundDown(uint256 indexed epoch, uint256 finalNav, uint256 endBlock);
 
     error ZeroAddress();
     error ZeroAmount();
@@ -76,6 +95,7 @@ contract LiquidWallet is ReentrancyGuard {
     error AlreadyWoundDown();
     error RequestNotFound();
     error RequestAlreadyClaimed();
+    error EpochNotFinalized();
     error InvalidBatch();
     error ZeroSettlement();
     error InsufficientLiquidity();
@@ -111,7 +131,25 @@ contract LiquidWallet is ReentrancyGuard {
         totalNav = INITIAL_NAV;
         rate = INITIAL_NAV;
 
-        emit NavSet(INITIAL_NAV, INITIAL_NAV);
+        currentEpoch = 1;
+        // Epoch 0 is finalized at deployment with the initial NAV.
+        epochs[0] = Epoch({
+            nav: INITIAL_NAV,
+            rate: INITIAL_NAV,
+            startBlock: block.number,
+            endBlock: block.number,
+            finalized: true
+        });
+        // Epoch 1 is open and not yet finalized.
+        epochs[1] = Epoch({
+            nav: INITIAL_NAV,
+            rate: INITIAL_NAV,
+            startBlock: block.number,
+            endBlock: 0,
+            finalized: false
+        });
+
+        emit EpochFinalized(0, INITIAL_NAV, INITIAL_NAV, block.number);
     }
 
     // ---------------------------------------------------------------------
@@ -126,8 +164,8 @@ contract LiquidWallet is ReentrancyGuard {
         emit VaultSet(vault_);
     }
 
-    /// @notice Report the fund NAV (total USDC value). Only the manager may do this.
-    ///         The rate is derived as NAV / totalSupply; when supply is zero the prior rate holds.
+    /// @notice Report the fund NAV (total USDC value) for the open epoch. Only the manager.
+    ///         The rate is derived as NAV / totalSupply; with zero supply the rate is unchanged.
     function setNav(uint256 nav_) external onlyManager {
         if (woundDown) revert AlreadyWoundDown();
         totalNav = nav_;
@@ -137,15 +175,39 @@ contract LiquidWallet is ReentrancyGuard {
             rate = Math.mulDiv(nav_, NAV_SCALE, supply);
         }
 
-        emit NavSet(nav_, rate);
+        epochs[currentEpoch].nav = nav_;
+        epochs[currentEpoch].rate = rate;
+
+        emit NavSet(currentEpoch, nav_, rate);
+    }
+
+    /// @notice Finalize the open epoch (locking its NAV and rate) and open the next epoch.
+    function finalizeEpoch(uint256 nav_) external onlyManager {
+        if (woundDown) revert AlreadyWoundDown();
+        _finalize(nav_);
+
+        currentEpoch += 1;
+        epochs[currentEpoch] = Epoch({
+            nav: totalNav, rate: rate, startBlock: block.number, endBlock: 0, finalized: false
+        });
+    }
+
+    /// @notice Irreversibly wind down. Finalizes the open epoch and blocks new requests.
+    ///         Existing requests remain claimable.
+    function pause(uint256 finalNav) external onlyManager {
+        if (woundDown) revert AlreadyWoundDown();
+        _finalize(finalNav);
+        woundDown = true;
+
+        emit WoundDown(currentEpoch, finalNav, block.number);
     }
 
     // ---------------------------------------------------------------------
     // Requests
     // ---------------------------------------------------------------------
 
-    /// @notice Create a mint request. The Vault pulls `amount` USDC from the caller into this
-    ///         contract. WSK is not minted until the request is claimed.
+    /// @notice Create a mint request. `amount` USDC is pulled from the caller. WSK is not minted
+    ///         until the request is claimed (after its epoch is finalized).
     function requestMint(uint256 amount) external nonReentrant returns (uint256 requestId) {
         if (woundDown) revert AlreadyWoundDown();
         if (amount == 0) revert ZeroAmount();
@@ -154,6 +216,7 @@ contract LiquidWallet is ReentrancyGuard {
         requests[requestId] = Request({
             requestType: RequestType.MINT,
             owner: msg.sender,
+            epoch: currentEpoch,
             amount: amount,
             fee: 0,
             net: 0,
@@ -163,7 +226,7 @@ contract LiquidWallet is ReentrancyGuard {
         usdc.safeTransferFrom(msg.sender, address(this), amount);
         pendingNFT.mint(msg.sender, requestId);
 
-        emit MintRequested(requestId, msg.sender, amount);
+        emit MintRequested(requestId, msg.sender, amount, currentEpoch);
     }
 
     /// @notice Create a redeem request. The 0.5% fee is forwarded to the manager immediately and
@@ -179,6 +242,7 @@ contract LiquidWallet is ReentrancyGuard {
         requests[requestId] = Request({
             requestType: RequestType.REDEEM,
             owner: msg.sender,
+            epoch: currentEpoch,
             amount: grossAmount,
             fee: fee,
             net: net,
@@ -191,7 +255,7 @@ contract LiquidWallet is ReentrancyGuard {
         }
         pendingNFT.mint(msg.sender, requestId);
 
-        emit RedeemRequested(requestId, msg.sender, grossAmount, fee);
+        emit RedeemRequested(requestId, msg.sender, grossAmount, fee, currentEpoch);
     }
 
     // ---------------------------------------------------------------------
@@ -226,12 +290,31 @@ contract LiquidWallet is ReentrancyGuard {
     // Internal
     // ---------------------------------------------------------------------
 
+    function _finalize(uint256 nav_) internal {
+        totalNav = nav_;
+        uint256 supply = wsk.totalSupply();
+        if (supply > 0) {
+            rate = Math.mulDiv(nav_, NAV_SCALE, supply);
+        }
+
+        Epoch storage epoch = epochs[currentEpoch];
+        epoch.nav = nav_;
+        epoch.rate = rate;
+        epoch.endBlock = block.number;
+        epoch.finalized = true;
+
+        emit EpochFinalized(currentEpoch, nav_, rate, block.number);
+    }
+
     function _claim(uint256 requestId) internal {
         if (requestId == 0 || requestId >= nextRequestId) revert RequestNotFound();
 
         Request storage request = requests[requestId];
         if (request.owner == address(0)) revert RequestNotFound();
         if (request.claimed) revert RequestAlreadyClaimed();
+
+        Epoch storage epoch = epochs[request.epoch];
+        if (!epoch.finalized) revert EpochNotFinalized();
 
         address beneficiary = pendingNFT.ownerOf(requestId);
         request.claimed = true;
@@ -240,15 +323,17 @@ contract LiquidWallet is ReentrancyGuard {
         // is paid to the current holder; no approval from the holder is required.
         pendingNFT.burn(requestId);
 
+        uint256 lockedRate = epoch.rate;
+
         if (request.requestType == RequestType.MINT) {
-            if (rate == 0) revert ZeroSettlement();
-            uint256 wskOut = Math.mulDiv(request.amount, NAV_SCALE, rate);
+            if (lockedRate == 0) revert ZeroSettlement();
+            uint256 wskOut = Math.mulDiv(request.amount, NAV_SCALE, lockedRate);
             if (wskOut == 0) revert ZeroSettlement();
 
             wsk.mint(beneficiary, wskOut);
             emit MintClaimed(requestId, beneficiary, wskOut);
         } else {
-            uint256 usdcOut = Math.mulDiv(request.net, rate, NAV_SCALE);
+            uint256 usdcOut = Math.mulDiv(request.net, lockedRate, NAV_SCALE);
             if (usdcOut == 0) revert ZeroSettlement();
             if (usdc.balanceOf(address(this)) < usdcOut) revert InsufficientLiquidity();
 

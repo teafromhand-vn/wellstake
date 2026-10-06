@@ -13,6 +13,7 @@ export function Overview() {
       right={d.woundDown ? <Badge tone="bad">{tr("woundDown")}</Badge> : <Badge tone="good">Active</Badge>}
     >
       <div className="grid grid-cols-2 gap-x-6">
+        <Row k={tr("activeEpoch")} v={d.currentEpoch.toString()} />
         <Row k={tr("nav")} v={`${format6(d.totalNav)} USDC`} />
         <Row k={tr("rate")} v={d.rate ? `${format6(d.rate, 6)}` : "-"} />
         <Row k={tr("totalSupply")} v={`${format6(d.totalSupply)} tWSK`} />

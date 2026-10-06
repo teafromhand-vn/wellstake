@@ -131,12 +131,33 @@ export const liquidWalletAbi = [
   },
   {
     type: "function",
+    name: "currentEpoch",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "epochs",
+    stateMutability: "view",
+    inputs: [{ name: "epoch", type: "uint256" }],
+    outputs: [
+      { name: "nav", type: "uint256" },
+      { name: "rate", type: "uint256" },
+      { name: "startBlock", type: "uint256" },
+      { name: "endBlock", type: "uint256" },
+      { name: "finalized", type: "bool" },
+    ],
+  },
+  {
+    type: "function",
     name: "requests",
     stateMutability: "view",
     inputs: [{ name: "requestId", type: "uint256" }],
     outputs: [
       { name: "requestType", type: "uint8" },
       { name: "owner", type: "address" },
+      { name: "epoch", type: "uint256" },
       { name: "amount", type: "uint256" },
       { name: "fee", type: "uint256" },
       { name: "net", type: "uint256" },
@@ -148,6 +169,20 @@ export const liquidWalletAbi = [
     name: "setNav",
     stateMutability: "nonpayable",
     inputs: [{ name: "nav_", type: "uint256" }],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "finalizeEpoch",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "nav_", type: "uint256" }],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "pause",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "finalNav", type: "uint256" }],
     outputs: [],
   },
   {
@@ -197,21 +232,39 @@ export const liquidWalletAbi = [
   },
   {
     type: "event",
-    name: "MintRequested",
+    name: "NavSet",
     inputs: [
-      { indexed: true, name: "requestId", type: "uint256" },
-      { indexed: true, name: "user", type: "address" },
-      { indexed: false, name: "usdcAmount", type: "uint256" },
+      { indexed: true, name: "epoch", type: "uint256" },
+      { indexed: false, name: "totalNav", type: "uint256" },
+      { indexed: false, name: "rate", type: "uint256" },
     ],
   },
   {
     type: "event",
-    name: "RedeemRequested",
+    name: "EpochFinalized",
+    inputs: [
+      { indexed: true, name: "epoch", type: "uint256" },
+      { indexed: false, name: "nav", type: "uint256" },
+      { indexed: false, name: "rate", type: "uint256" },
+      { indexed: false, name: "endBlock", type: "uint256" },
+    ],
+  },
+  {
+    type: "event",
+    name: "MintClaimed",
     inputs: [
       { indexed: true, name: "requestId", type: "uint256" },
       { indexed: true, name: "user", type: "address" },
-      { indexed: false, name: "grossWsk", type: "uint256" },
-      { indexed: false, name: "feeWsk", type: "uint256" },
+      { indexed: false, name: "wskAmount", type: "uint256" },
+    ],
+  },
+  {
+    type: "event",
+    name: "RedeemClaimed",
+    inputs: [
+      { indexed: true, name: "requestId", type: "uint256" },
+      { indexed: true, name: "user", type: "address" },
+      { indexed: false, name: "usdcAmount", type: "uint256" },
     ],
   },
 ] as const;

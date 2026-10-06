@@ -79,4 +79,18 @@ export const t: Dict = {
     en: "Beta build on Arc Testnet. Funds are test-only.",
     vi: "Bản beta trên Arc Testnet. Tài sản chỉ để test.",
   },
+
+  epoch: { en: "Epoch", vi: "Epoch" },
+  activeEpoch: { en: "Active epoch", vi: "Epoch hiện tại" },
+  epochLocked: { en: "Epoch finalized", vi: "Epoch đã chốt" },
+  epochOpen: { en: "Epoch open", vi: "Epoch đang mở" },
+  notFinalized: { en: "Epoch not finalized yet", vi: "Epoch chưa được chốt" },
+  chartRate: { en: "Rate per epoch", vi: "Tỷ giá theo epoch" },
+  chartTvl: { en: "TVL per epoch", vi: "TVL theo epoch" },
+  noHistory: { en: "No finalized epochs yet.", vi: "Chưa có epoch nào được chốt." },
+  finalizeEpoch: { en: "Finalize epoch", vi: "Chốt epoch" },
+  pauseProtocol: { en: "Wind down (pause)", vi: "Đóng quỹ (pause)" },
+  currentNavLabel: { en: "Current NAV report", vi: "NAV báo cáo hiện tại" },
+  claimNotReady: { en: "Claim not ready (epoch open)", vi: "Chưa claim được (epoch đang mở)" },
+  finalNav: { en: "Final NAV", vi: "NAV cuối" },
 };

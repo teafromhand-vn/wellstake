@@ -17,6 +17,7 @@ contract MintTest is WellstakeTestBase {
         (
             LiquidWallet.RequestType t,
             address owner,
+            uint256 epoch,
             uint256 amt,
             uint256 fee,
             uint256 net,
@@ -24,6 +25,7 @@ contract MintTest is WellstakeTestBase {
         ) = liquid.requests(id);
         assertEq(uint256(t), uint256(LiquidWallet.RequestType.MINT));
         assertEq(owner, alice);
+        assertEq(epoch, 1);
         assertEq(amt, amount);
         assertEq(fee, 0);
         assertEq(net, 0);
@@ -46,8 +48,15 @@ contract MintTest is WellstakeTestBase {
         assertEq(liquid.nextRequestId(), 1);
     }
 
+    function test_claimBeforeFinalizeReverts() public {
+        uint256 id = _requestMint(alice, 100 * ONE);
+        vm.expectRevert(LiquidWallet.EpochNotFinalized.selector);
+        liquid.claim(id);
+    }
+
     function test_claimUsesRate() public {
         uint256 id = _requestMint(alice, 100 * ONE);
+        _finalizeEpoch(liquid.totalNav());
         // rate initially = INITIAL_NAV (38462). WSK = 100e6 * 1e6 / 38462.
         uint256 expected = uint256(100 * ONE) * 1e6 / INITIAL_NAV;
         liquid.claim(id);
@@ -55,15 +64,25 @@ contract MintTest is WellstakeTestBase {
     }
 
     function test_claimAfterNavUpdate() public {
-        uint256 id = _requestMint(alice, 100 * ONE);
+        _requestMint(alice, 100 * ONE);
         _setNav(0); // supply is 0 -> rate unchanged
         _setNav(200 * ONE); // still supply 0 -> rate unchanged
         // rate stays INITIAL_NAV because supply == 0
         assertEq(liquid.rate(), INITIAL_NAV);
     }
 
+    function test_lockedRateUsedAfterLaterFinalize() public {
+        uint256 id = _requestMint(alice, 100 * ONE);
+        _finalizeEpoch(liquid.totalNav()); // epoch 1 locked at rate 38462
+        _finalizeEpoch(liquid.totalNav()); // epoch 2 locked (rate still 38462, supply 0)
+        uint256 expected = uint256(100 * ONE) * 1e6 / INITIAL_NAV;
+        liquid.claim(id);
+        assertEq(wsk.balanceOf(alice), expected);
+    }
+
     function test_thirdPartyCanClaimToOwner() public {
         uint256 id = _requestMint(alice, 100 * ONE);
+        _finalizeEpoch(liquid.totalNav());
         vm.prank(carol);
         liquid.claim(id);
         assertGt(wsk.balanceOf(alice), 0);
@@ -72,6 +91,7 @@ contract MintTest is WellstakeTestBase {
 
     function test_nftBurnedAfterClaim() public {
         uint256 id = _requestMint(alice, 100 * ONE);
+        _finalizeEpoch(liquid.totalNav());
         liquid.claim(id);
         vm.expectRevert();
         nft.ownerOf(id);
@@ -79,6 +99,7 @@ contract MintTest is WellstakeTestBase {
 
     function test_doubleClaimReverts() public {
         uint256 id = _requestMint(alice, 100 * ONE);
+        _finalizeEpoch(liquid.totalNav());
         liquid.claim(id);
         vm.expectRevert(LiquidWallet.RequestAlreadyClaimed.selector);
         liquid.claim(id);

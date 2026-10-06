@@ -19,6 +19,7 @@ contract RedeemTest is WellstakeTestBase {
         (
             LiquidWallet.RequestType t,
             address owner,
+            uint256 epoch,
             uint256 amt,
             uint256 feeStored,
             uint256 netStored,
@@ -26,6 +27,7 @@ contract RedeemTest is WellstakeTestBase {
         ) = liquid.requests(id);
         assertEq(uint256(t), uint256(LiquidWallet.RequestType.REDEEM));
         assertEq(owner, alice);
+        assertEq(epoch, 2);
         assertEq(amt, gross);
         assertEq(feeStored, fee);
         assertEq(netStored, net);
@@ -61,9 +63,10 @@ contract RedeemTest is WellstakeTestBase {
         vm.prank(alice);
         uint256 id = liquid.requestRedeem(gross);
         _usdcToLiquid(10_000 * ONE);
+        _finalizeEpoch(liquid.totalNav()); // finalize the request's epoch
 
-        uint256 rate = liquid.rate();
-        uint256 expectedOut = net * rate / 1e6;
+        (, uint256 lockedRate,,,) = liquid.epochs(2);
+        uint256 expectedOut = net * lockedRate / 1e6;
         uint256 before = usdc.balanceOf(alice);
 
         liquid.claim(id);
@@ -78,6 +81,7 @@ contract RedeemTest is WellstakeTestBase {
         uint256 gross = held / 2;
         vm.prank(alice);
         uint256 id = liquid.requestRedeem(gross);
+        _finalizeEpoch(liquid.totalNav());
 
         // Drain USDC from liquid so redemption cannot be paid.
         uint256 bal = usdc.balanceOf(address(liquid));
@@ -89,7 +93,7 @@ contract RedeemTest is WellstakeTestBase {
         vm.expectRevert(LiquidWallet.InsufficientLiquidity.selector);
         liquid.claim(id);
 
-        (,,,,, bool claimed) = liquid.requests(id);
+        (,,,,,, bool claimed) = liquid.requests(id);
         assertFalse(claimed);
         assertEq(nft.ownerOf(id), alice);
     }
@@ -100,6 +104,7 @@ contract RedeemTest is WellstakeTestBase {
         vm.prank(alice);
         uint256 id = liquid.requestRedeem(gross);
         _usdcToLiquid(10_000 * ONE);
+        _finalizeEpoch(liquid.totalNav());
 
         uint256 before = usdc.balanceOf(alice);
         vm.prank(carol);

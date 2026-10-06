@@ -1,8 +1,7 @@
+import { Routes, Route, Navigate } from "react-router-dom";
 import { TopBar } from "./components/TopBar";
-import { Overview } from "./components/Overview";
-import { MintRedeem } from "./components/MintRedeem";
-import { Requests } from "./components/Requests";
-import { Admin } from "./components/Admin";
+import { Home } from "./pages/Home";
+import { AdminPage } from "./pages/AdminPage";
 import { useI18n } from "./i18n-react";
 import { CONTRACTS, EXPLORER, SHARE } from "./config";
 
@@ -25,19 +24,11 @@ export default function App() {
           </a>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
-          <div className="space-y-4">
-            <Overview />
-            <Admin />
-          </div>
-          <div className="space-y-4">
-            <MintRedeem onDone={() => {}} />
-          </div>
-        </div>
-
-        <div className="mt-4">
-          <Requests />
-        </div>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/admin" element={<AdminPage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
 
         <footer className="mt-8 border-t border-edge pt-4 text-center text-xs text-gray-600">
           Wellstake V1 beta · Arc Testnet ({5042002}) ·{" "}

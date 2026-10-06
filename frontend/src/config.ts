@@ -16,10 +16,10 @@ export const arcTestnet = defineChain({
 
 /// Active deployment (WUSDC stack on Arc Testnet).
 export const CONTRACTS = {
-  liquidWallet: "0xab3bc58786c8a2B8149A49F5fEB3B15F7afC054C",
-  vault: "0x6D0448BA63Bb2dD8dED5cE73e4faa424f6F39b0a",
-  wsk: "0xF5FC3F9839dab245b3fD3f54059d2Fa1642ba85a",
-  nft: "0xDE64b96874c5Beb052F3fC11af82dF888EbbFE44",
+  liquidWallet: "0x61acb88ae559b578ee9a73cc8c7786b5975a287b",
+  vault: "0xf656313dF3A5F6B57d7a01D0162546E257a631a0",
+  wsk: "0x382cbB7ADcA783800fF79c8a1cfDc6c24D941161",
+  nft: "0xE3a727a6C47b7B539eA0A7c7D6Dae4756a95F377",
   usdc: "0x3600000000000000000000000000000000000000",
 } as const;
 
