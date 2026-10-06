@@ -12,3 +12,18 @@ input,
 select {
   color-scheme: dark;
 }
+
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.pop-in {
+  animation: popIn 0.35s ease-out;
+}

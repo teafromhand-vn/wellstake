@@ -1,6 +1,8 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { TopBar } from "./components/TopBar";
-import { Home } from "./pages/Home";
+import { Info } from "./pages/Info";
+import { Mint } from "./pages/Mint";
+import { Redeem } from "./pages/Redeem";
 import { AdminPage } from "./pages/AdminPage";
 import { useI18n } from "./i18n-react";
 import { CONTRACTS, EXPLORER, SHARE } from "./config";
@@ -25,9 +27,13 @@ export default function App() {
         </div>
 
         <Routes>
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={<Navigate to="/info" replace />} />
+          <Route path="/info" element={<Info />} />
+          <Route path="/mint" element={<Mint />} />
+          <Route path="/redeem" element={<Redeem />} />
+          <Route path="/docs" element={<Navigate to="/info" replace />} />
           <Route path="/admin" element={<AdminPage />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<Navigate to="/info" replace />} />
         </Routes>
 
         <footer className="mt-8 border-t border-edge pt-4 text-center text-xs text-gray-600">

@@ -63,7 +63,7 @@ export function PopupProvider({ children }: { children: React.ReactNode }) {
     setItems((prev) => [...prev, { id, tone, title, description }]);
     setTimeout(() => {
       setItems((prev) => prev.filter((t) => t.id !== id));
-    }, 6500);
+    }, 5000);
   }, []);
 
   const toneBorder: Record<PopupTone, string> = {
@@ -80,7 +80,7 @@ export function PopupProvider({ children }: { children: React.ReactNode }) {
         {items.map((t) => (
           <div
             key={t.id}
-            className={`pointer-events-auto w-[300px] max-w-[85vw] rounded-xl border bg-panel/95 p-3 shadow-xl backdrop-blur ${toneBorder[t.tone]}`}
+            className={`pop-in pointer-events-auto w-[300px] max-w-[85vw] rounded-xl border bg-panel/95 p-3 shadow-xl backdrop-blur ${toneBorder[t.tone]}`}
             role="alert"
           >
             <div className="flex items-start gap-3">

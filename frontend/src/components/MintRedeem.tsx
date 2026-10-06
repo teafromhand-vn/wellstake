@@ -15,13 +15,12 @@ import { useVaultData } from "../useVault";
 
 type Mode = "mint" | "redeem";
 
-export function MintRedeem({ onDone }: { onDone: () => void }) {
+export function MintRedeem({ mode, onDone }: { mode: Mode; onDone: () => void }) {
   const { tr } = useI18n();
   const { address } = useAccount();
   const chainId = useChainId();
   const d = useVaultData();
   const { notify } = usePopup();
-  const [mode, setMode] = useState<Mode>("mint");
   const [amount, setAmount] = useState("");
   const [status, setStatus] = useState<string | null>(null);
 
@@ -90,30 +89,7 @@ export function MintRedeem({ onDone }: { onDone: () => void }) {
   }
 
   return (
-    <Card title={tr("mint") + " / " + tr("redeem")}>
-      <div className="mb-3 flex gap-2">
-        <button
-          className={`flex-1 rounded-lg px-3 py-2 text-sm ${mode === "mint" ? "bg-accent text-ink" : "bg-panel2 text-gray-300"}`}
-          onClick={() => {
-            setMode("mint");
-            setAmount("");
-            setStatus(null);
-          }}
-        >
-          {tr("mint")}
-        </button>
-        <button
-          className={`flex-1 rounded-lg px-3 py-2 text-sm ${mode === "redeem" ? "bg-accent text-ink" : "bg-panel2 text-gray-300"}`}
-          onClick={() => {
-            setMode("redeem");
-            setAmount("");
-            setStatus(null);
-          }}
-        >
-          {tr("redeem")}
-        </button>
-      </div>
-
+    <Card title={mode === "mint" ? tr("mint") : tr("redeem")}>
       <p className="mb-3 text-xs text-gray-400">
         {mode === "mint" ? tr("mintDesc") : tr("redeemDesc")}
       </p>

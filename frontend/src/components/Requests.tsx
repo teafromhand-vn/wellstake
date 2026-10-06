@@ -20,10 +20,7 @@ type Req = {
   owner: `0x${string}`;
   epoch: bigint;
   amount: bigint;
-  fee: bigint;
-  net: bigint;
   claimed: boolean;
-  finalized: boolean;
 };
 
 export function Requests() {
@@ -31,7 +28,6 @@ export function Requests() {
   const { address } = useAccount();
   const d = useVaultData();
   const { notify } = usePopup();
-  const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const { data: nextIdData, refetch: refetchNext } = useReadContract({
     abi: liquidWalletAbi,
@@ -71,15 +67,14 @@ export function Requests() {
           owner: r[1],
           epoch: r[2],
           amount: r[3],
-          fee: r[4],
-          net: r[5],
           claimed: r[6],
-          finalized: false,
         } as Req;
       })
       .filter((x): x is Req => x !== null && x.owner.toLowerCase() === address.toLowerCase())
       .sort((a, b) => (a.id < b.id ? 1 : -1));
   }, [data, ids, address]);
+
+  const claimable = reqs.filter((r) => !r.claimed && r.epoch < d.currentEpoch);
 
   const { writeContractAsync, isPending } = useWriteContract();
   const [txHash, setTxHash] = useState<`0x${string}` | undefined>();
@@ -90,30 +85,14 @@ export function Requests() {
       refetch();
       refetchNext();
       d.refetch();
-      setSelected(new Set());
       notify("success", tr("notifySuccessTitle"), tr("notifySuccessDesc"));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSuccess, txHash]);
 
-  async function claim(id: bigint) {
+  async function claimAll() {
     try {
-      const hash = await writeContractAsync({
-        abi: liquidWalletAbi,
-        address: CONTRACTS.liquidWallet,
-        functionName: "claim",
-        args: [id],
-      });
-      setTxHash(hash);
-      notify("info", tr("notifyClaimTitle"), tr("notifySubmittedDesc"));
-    } catch (e) {
-      notify("error", tr("notifyErrorTitle"), errMessage(e));
-    }
-  }
-
-  async function claimMany() {
-    try {
-      const list = Array.from(selected).map((s) => BigInt(s));
+      const list = claimable.map((r) => r.id);
       if (list.length === 0) return;
       const hash = await writeContractAsync({
         abi: liquidWalletAbi,
@@ -128,23 +107,16 @@ export function Requests() {
     }
   }
 
-  function toggle(id: bigint) {
-    const key = id.toString();
-    setSelected((prev) => {
-      const n = new Set(prev);
-      if (n.has(key)) n.delete(key);
-      else n.add(key);
-      return n;
-    });
-  }
-
   return (
     <Card
       title={tr("myRequests")}
       right={
-        <Button variant="ghost" disabled={selected.size === 0 || isPending || confirming} onClick={claimMany}>
-          {tr("claimMany")} ({selected.size})
-        </Button>
+        <div className="flex items-center gap-2">
+          <span className="hidden text-[11px] text-gray-500 sm:inline">{tr("claimAllHint")}</span>
+          <Button variant="ghost" disabled={claimable.length === 0 || isPending || confirming} onClick={claimAll}>
+            {tr("claimMany")} ({claimable.length})
+          </Button>
+        </div>
       }
     >
       {!address ? (
@@ -156,29 +128,18 @@ export function Requests() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-edge text-left text-xs text-gray-500">
-                <th className="py-2 pr-2"></th>
                 <th className="py-2 pr-2">{tr("id")}</th>
                 <th className="py-2 pr-2">{tr("type")}</th>
                 <th className="py-2 pr-2">{tr("epoch")}</th>
                 <th className="py-2 pr-2 text-right">{tr("amount")}</th>
                 <th className="py-2 pr-2">{tr("status")}</th>
-                <th className="py-2 pr-2 text-right">{tr("action")}</th>
               </tr>
             </thead>
             <tbody>
               {reqs.map((r) => {
-                const claimable = !r.claimed && r.epoch < d.currentEpoch;
+                const ready = !r.claimed && r.epoch < d.currentEpoch;
                 return (
                   <tr key={r.id.toString()} className="border-b border-edge/40">
-                    <td className="py-2 pr-2">
-                      {!r.claimed && (
-                        <input
-                          type="checkbox"
-                          checked={selected.has(r.id.toString())}
-                          onChange={() => toggle(r.id)}
-                        />
-                      )}
-                    </td>
                     <td className="py-2 pr-2 text-gray-300">#{r.id.toString()}</td>
                     <td className="py-2 pr-2">
                       <span
@@ -196,20 +157,11 @@ export function Requests() {
                     <td className="py-2 pr-2">
                       {r.claimed ? (
                         <span className="text-xs text-gray-500">{tr("claimed")}</span>
-                      ) : claimable ? (
+                      ) : ready ? (
                         <span className="text-xs text-yellow-300">{tr("pending")}</span>
                       ) : (
                         <span className="text-xs text-gray-500">{tr("notFinalized")}</span>
                       )}
-                    </td>
-                    <td className="py-2 pr-2 text-right">
-                      <Button
-                        variant="ghost"
-                        disabled={r.claimed || !claimable || isPending || confirming}
-                        onClick={() => claim(r.id)}
-                      >
-                        {tr("claim")}
-                      </Button>
                     </td>
                   </tr>
                 );
