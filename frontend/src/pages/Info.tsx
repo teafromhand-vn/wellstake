@@ -2,14 +2,36 @@ import { useI18n } from "../i18n-react";
 import { useVaultData } from "../useVault";
 import { useEpochStart } from "../useEpochStart";
 import { format6 } from "../lib";
-import { Card, Row, Badge } from "../components/Ui";
+import { Card, Badge } from "../components/Ui";
 import { LineChart } from "../components/LineChart";
 import { useHistory } from "../useHistory";
 
-function fmtUTC(ts: bigint | null): string {
-  if (!ts) return "-";
+function fmtUTC(ts: bigint | null): { time: string; date: string } {
+  if (!ts) return { time: "-", date: "-" };
   const d = new Date(Number(ts) * 1000);
-  return d.toUTCString();
+  const time = d.toLocaleTimeString("en-GB", { timeZone: "UTC", hour: "2-digit", minute: "2-digit" });
+  const date = d.toLocaleDateString("en-GB", { timeZone: "UTC", day: "2-digit", month: "short", year: "numeric" });
+  return { time: `${time} UTC`, date };
+}
+
+function Stat({
+  label,
+  value,
+  sub,
+  big,
+}: {
+  label: string;
+  value: string;
+  sub?: string;
+  big?: boolean;
+}) {
+  return (
+    <div className="rounded-xl border border-edge bg-panel2 p-4">
+      <div className="text-xs uppercase tracking-wide text-gray-500">{label}</div>
+      <div className={`mt-1 font-semibold text-gray-100 ${big ? "text-3xl" : "text-xl"}`}>{value}</div>
+      {sub && <div className="mt-0.5 text-xs text-gray-400">{sub}</div>}
+    </div>
+  );
 }
 
 export function Info() {
@@ -18,31 +40,50 @@ export function Info() {
   const epochStart = useEpochStart(d.currentEpoch);
   const { points, loading } = useHistory();
 
+  const start = fmtUTC(epochStart);
+
   const rates = points.map((p) => ({ label: `Epoch ${p.epoch}`, value: p.rate }));
-  const tvls = points.map((p) => ({ label: `Epoch ${p.epoch}`, value: p.totalNav }));
+  const supplies = points.map((p) => ({ label: `Epoch ${p.epoch}`, value: p.supply }));
 
   return (
     <div className="space-y-4">
-      <Card
-        title={tr("overview")}
-        right={d.woundDown ? <Badge tone="bad">{tr("woundDown")}</Badge> : <Badge tone="good">Active</Badge>}
-      >
-        <div className="grid gap-x-8 gap-y-1 sm:grid-cols-2">
-          <Row k={tr("activeEpoch")} v={d.currentEpoch.toString()} />
-          <Row k={tr("epochStart")} v={fmtUTC(epochStart)} />
-          <Row k={tr("nav")} v={`${format6(d.totalNav)} USDC`} />
-          <Row k={tr("totalSupply")} v={`${format6(d.totalSupply)} tWSK`} />
-          <Row k={tr("convertRate")} v={`${d.rate ? format6(d.rate, 6) : "-"} ${tr("perShare")}`} />
-          <Row k={`Liquid USDC`} v={format6(d.liquidUsdc)} />
-        </div>
-      </Card>
+      <div className="flex items-center justify-between">
+        <h1 className="text-sm font-semibold text-gray-300">{tr("overview")}</h1>
+        {d.woundDown ? <Badge tone="bad">{tr("woundDown")}</Badge> : <Badge tone="good">Active</Badge>}
+      </div>
+
+      {/* Big overview: 4 key stats */}
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Stat
+          label={`${tr("activeEpoch")} #${d.currentEpoch.toString()}`}
+          value={start.time}
+          sub={start.date}
+          big
+        />
+        <Stat label={tr("nav")} value={`${format6(d.totalNav)} USDC`} big />
+        <Stat label={tr("totalSupply")} value={`${format6(d.totalSupply)} tWSK`} big />
+        <Stat
+          label={tr("wskPrice")}
+          value={`${d.rate ? format6(d.rate, 6) : "-"} USDC`}
+          sub={tr("perShare")}
+          big
+        />
+      </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Card title={tr("chartRate")} right={loading ? <span className="text-xs text-gray-500">{tr("loading")}</span> : undefined}>
-          <LineChart data={rates} color="#6ea8fe" format={(n) => n.toFixed(4)} emptyLabel={tr("noHistory")} />
+        <Card
+          title={tr("chartRate")}
+          right={loading ? <span className="text-xs text-gray-500">{tr("loading")}</span> : undefined}
+        >
+          <LineChart data={rates} color="#6ea8fe" format={(n) => n.toFixed(6)} emptyLabel={tr("noHistory")} />
         </Card>
-        <Card title={tr("chartTvl")}>
-          <LineChart data={tvls} color="#34d399" format={(n) => n.toFixed(2)} emptyLabel={tr("noHistory")} />
+        <Card title={tr("chartSupply")}>
+          <LineChart
+            data={supplies}
+            color="#34d399"
+            format={(n) => n.toFixed(2)}
+            emptyLabel={tr("noHistory")}
+          />
         </Card>
       </div>
     </div>
