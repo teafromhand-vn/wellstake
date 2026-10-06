@@ -18,8 +18,8 @@ export function Info() {
   const epochStart = useEpochStart(d.currentEpoch);
   const { points, loading } = useHistory();
 
-  const rates = points.map((p) => p.rate);
-  const tvls = points.map((p) => p.totalNav);
+  const rates = points.map((p) => ({ label: `Epoch ${p.epoch}`, value: p.rate }));
+  const tvls = points.map((p) => ({ label: `Epoch ${p.epoch}`, value: p.totalNav }));
 
   return (
     <div className="space-y-4">
