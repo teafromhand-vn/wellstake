@@ -21,14 +21,8 @@ export function TopBar() {
     <header className="border-b border-edge bg-card">
       <div className="mx-auto flex h-16 max-w-content items-center justify-between px-5">
         {/* Left: logo */}
-        <NavLink to="/info" className="flex items-center gap-2">
-          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent/10 text-accent">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M4 14c2-4 5-6 8-6s6 2 8 6" strokeLinecap="round" />
-              <path d="M4 17h16" strokeLinecap="round" />
-            </svg>
-          </span>
-          <span className="text-[15px] font-bold text-ink">Wellstake</span>
+        <NavLink to="/info" className="flex items-center">
+          <img src="/logo_hortizontial.png" alt="Wellstake" className="h-8 w-auto" />
         </NavLink>
 
         {/* Center: nav */}
