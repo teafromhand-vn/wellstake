@@ -112,7 +112,7 @@ export function Requests() {
       title={tr("myRequests")}
       right={
         <div className="flex items-center gap-2">
-          <span className="hidden text-[11px] text-gray-500 sm:inline">{tr("claimAllHint")}</span>
+          <span className="hidden text-[11px] text-muted sm:inline">{tr("claimAllHint")}</span>
           <Button variant="ghost" disabled={claimable.length === 0 || isPending || confirming} onClick={claimAll}>
             {tr("claimMany")} ({claimable.length})
           </Button>
@@ -120,14 +120,14 @@ export function Requests() {
       }
     >
       {!address ? (
-        <p className="py-6 text-center text-sm text-gray-500">{tr("connect")}</p>
+        <p className="py-6 text-center text-sm text-muted">{tr("connect")}</p>
       ) : reqs.length === 0 ? (
-        <p className="py-6 text-center text-sm text-gray-500">{tr("noRequests")}</p>
+        <p className="py-6 text-center text-sm text-muted">{tr("noRequests")}</p>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-edge text-left text-xs text-gray-500">
+              <tr className="border-b border-edge text-left text-xs text-muted">
                 <th className="py-2 pr-2">{tr("id")}</th>
                 <th className="py-2 pr-2">{tr("type")}</th>
                 <th className="py-2 pr-2">{tr("epoch")}</th>
@@ -140,7 +140,7 @@ export function Requests() {
                 const ready = !r.claimed && r.epoch < d.currentEpoch;
                 return (
                   <tr key={r.id.toString()} className="border-b border-edge/40">
-                    <td className="py-2 pr-2 text-gray-700">#{r.id.toString()}</td>
+                    <td className="py-2 pr-2 text-ink">#{r.id.toString()}</td>
                     <td className="py-2 pr-2">
                       <span
                         className={`rounded px-1.5 py-0.5 text-[11px] ${
@@ -150,17 +150,17 @@ export function Requests() {
                         {r.requestType === 0 ? "MINT" : "REDEEM"}
                       </span>
                     </td>
-                    <td className="py-2 pr-2 text-gray-500">{r.epoch.toString()}</td>
-                    <td className="py-2 pr-2 text-right text-gray-900">
+                    <td className="py-2 pr-2 text-muted">{r.epoch.toString()}</td>
+                    <td className="py-2 pr-2 text-right text-ink">
                       {r.requestType === 0 ? `${format6(r.amount)} USDC` : `${format6(r.amount)} tWSK`}
                     </td>
                     <td className="py-2 pr-2">
                       {r.claimed ? (
-                        <span className="text-xs text-gray-500">{tr("claimed")}</span>
+                        <span className="text-xs text-muted">{tr("claimed")}</span>
                       ) : ready ? (
                         <span className="text-xs text-yellow-300">{tr("pending")}</span>
                       ) : (
-                        <span className="text-xs text-gray-500">{tr("notFinalized")}</span>
+                        <span className="text-xs text-muted">{tr("notFinalized")}</span>
                       )}
                     </td>
                   </tr>

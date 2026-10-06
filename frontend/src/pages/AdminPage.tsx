@@ -71,7 +71,7 @@ export function AdminPage() {
 
   return (
     <div className="space-y-4">
-      <div className="text-xs text-gray-500">
+      <div className="text-xs text-muted">
         <Link className="text-accent underline" to="/">
           ← {tr("appTitle")}
         </Link>
@@ -79,7 +79,7 @@ export function AdminPage() {
 
       <Card title={tr("admin")}>
         {!isManager ? (
-          <p className="text-sm text-gray-500">{tr("notManager")}</p>
+          <p className="text-sm text-muted">{tr("notManager")}</p>
         ) : (
           <div className="space-y-2">
             <Row k="Manager" v={shortAddr(d.manager)} />
@@ -98,7 +98,7 @@ export function AdminPage() {
       {isManager && (
         <>
           <Card title={tr("finalizeEpoch")}>
-            <p className="mb-2 text-xs text-gray-500">{tr("confirmFinalize")}</p>
+            <p className="mb-2 text-xs text-muted">{tr("confirmFinalize")}</p>
             <div className="flex items-end gap-2">
               <div className="flex-1">
                 <Field
@@ -116,7 +116,7 @@ export function AdminPage() {
           </Card>
 
           <Card title={tr("pauseProtocol")}>
-            <p className="mb-2 text-xs text-gray-500">{tr("confirmPause")}</p>
+            <p className="mb-2 text-xs text-muted">{tr("confirmPause")}</p>
             <div className="flex items-end gap-2">
               <div className="flex-1">
                 <Field
@@ -140,7 +140,7 @@ export function AdminPage() {
       )}
 
       {txHash && (
-        <div className="text-xs text-gray-500">
+        <div className="text-xs text-muted">
           {confirming ? tr("loading") : isSuccess ? tr("txSuccess") : tr("txSubmitted")}{" "}
           <a
             className="text-accent underline"

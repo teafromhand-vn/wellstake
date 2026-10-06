@@ -10,10 +10,10 @@ export function Card({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-xl border border-edge bg-panel p-4">
+    <div className="rounded-xl border border-edge bg-card p-4">
       {(title || right) && (
         <div className="mb-3 flex items-center justify-between">
-          {title && <h3 className="text-sm font-semibold text-gray-900">{title}</h3>}
+          {title && <h3 className="text-[13px] font-semibold text-ink">{title}</h3>}
           {right}
         </div>
       )}
@@ -38,16 +38,16 @@ export function Button({
   type?: "button" | "submit";
 }) {
   const styles: Record<string, string> = {
-    primary: "bg-accent text-ink hover:brightness-110",
-    ghost: "bg-panel2 text-gray-900 border border-edge hover:border-accent",
-    danger: "bg-bad/90 text-white hover:brightness-110",
+    primary: "bg-accent text-white hover:brightness-105",
+    ghost: "bg-inset text-ink border border-edge hover:bg-[#ECEEF2]",
+    danger: "bg-bad text-white hover:brightness-105",
   };
   return (
     <button
       type={type}
       onClick={onClick}
       disabled={disabled}
-      className={`rounded-lg px-3 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-40 ${styles[variant]} ${className}`}
+      className={`rounded-lg px-3 py-2 text-[13px] font-semibold transition disabled:cursor-not-allowed disabled:opacity-40 ${styles[variant]} ${className}`}
     >
       {children}
     </button>
@@ -75,16 +75,14 @@ export function Field({
 }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-xs text-gray-500">{label}</span>
+      <span className="mb-1 block text-xs text-muted">{label}</span>
       <div
         className={`flex items-center gap-2 rounded-lg border px-3 py-2 ${
-          disabled ? "border-edge bg-gray-100" : "border-edge bg-panel2"
+          disabled ? "border-edge bg-inset" : "border-edge bg-card"
         }`}
       >
         <input
-          className={`w-full bg-transparent text-sm outline-none ${
-            disabled ? "text-gray-500" : "text-gray-900"
-          }`}
+          className={`w-full bg-transparent text-sm outline-none ${disabled ? "text-subtle" : "text-ink"}`}
           value={value}
           placeholder={placeholder}
           disabled={disabled}
@@ -95,12 +93,12 @@ export function Field({
           <button
             type="button"
             onClick={onMax}
-            className="rounded border border-edge px-1.5 py-0.5 text-[10px] text-gray-500 hover:border-accent"
+            className="rounded border border-edge px-1.5 py-0.5 text-[10px] text-muted hover:border-accent"
           >
             {maxLabel ?? "MAX"}
           </button>
         )}
-        {suffix && <span className="text-xs text-gray-500">{suffix}</span>}
+        {suffix && <span className="text-xs text-muted">{suffix}</span>}
       </div>
     </label>
   );
@@ -108,22 +106,22 @@ export function Field({
 
 export function Row({ k, v }: { k: string; v: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-between border-b border-edge/60 py-1.5 text-sm last:border-0">
-      <span className="text-gray-500">{k}</span>
-      <span className="font-medium text-gray-900">{v}</span>
+    <div className="flex items-center justify-between border-b border-edge/70 py-1.5 text-sm last:border-0">
+      <span className="text-muted">{k}</span>
+      <span className="font-medium text-ink">{v}</span>
     </div>
   );
 }
 
 export function Badge({ children, tone = "muted" }: { children: React.ReactNode; tone?: string }) {
   const tones: Record<string, string> = {
-    muted: "bg-panel2 text-gray-700 border-edge",
-    good: "bg-good/10 text-good border-good/30",
-    warn: "bg-yellow-500/10 text-yellow-800 border-yellow-500/40",
-    bad: "bg-bad/10 text-bad border-bad/30",
+    muted: "bg-inset text-muted border-edge",
+    good: "bg-goodbg text-good border-[#CDEEDD]",
+    warn: "bg-warnbg text-warntext border-warnborder",
+    bad: "bg-bad/10 text-bad border-bad/20",
   };
   return (
-    <span className={`rounded-full border px-2 py-0.5 text-[11px] ${tones[tone] ?? tones.muted}`}>
+    <span className={`rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${tones[tone] ?? tones.muted}`}>
       {children}
     </span>
   );

@@ -80,7 +80,7 @@ export function PopupProvider({ children }: { children: React.ReactNode }) {
         {items.map((t) => (
           <div
             key={t.id}
-            className={`pop-in pointer-events-auto w-[300px] max-w-[85vw] rounded-xl border bg-panel/95 p-3 shadow-xl backdrop-blur ${toneBorder[t.tone]}`}
+            className={`pop-in pointer-events-auto w-[300px] max-w-[85vw] rounded-xl border bg-card p-3 shadow-md ${toneBorder[t.tone]}`}
             role="alert"
           >
             <div className="flex items-start gap-3">
@@ -88,13 +88,13 @@ export function PopupProvider({ children }: { children: React.ReactNode }) {
                 <Icon tone={t.tone} />
               </div>
               <div className="min-w-0">
-                <div className="text-sm font-semibold text-gray-900">{t.title}</div>
+                <div className="text-sm font-semibold text-ink">{t.title}</div>
                 {t.description && (
-                  <div className="mt-0.5 break-words text-xs text-gray-500">{t.description}</div>
+                  <div className="mt-0.5 break-words text-xs text-muted">{t.description}</div>
                 )}
               </div>
               <button
-                className="ml-auto shrink-0 text-gray-500 hover:text-gray-700"
+                className="ml-auto shrink-0 text-subtle hover:text-ink"
                 onClick={() => setItems((prev) => prev.filter((x) => x.id !== t.id))}
                 aria-label="close"
               >

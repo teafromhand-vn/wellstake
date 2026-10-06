@@ -97,7 +97,7 @@ export function MintRedeem({ mode, onDone }: { mode: Mode; onDone: () => void })
 
   return (
     <Card title={mode === "mint" ? tr("mint") : tr("redeem")}>
-      <p className="mb-3 text-xs text-gray-500">
+      <p className="mb-3 text-xs text-muted">
         {mode === "mint" ? tr("mintDesc") : tr("redeemDesc")}
       </p>
 
@@ -112,7 +112,7 @@ export function MintRedeem({ mode, onDone }: { mode: Mode; onDone: () => void })
         maxLabel={tr("max")}
         suffix={mode === "mint" ? "USDC" : "tWSK"}
       />
-      <div className="mt-1 text-xs text-gray-500">
+      <div className="mt-1 text-xs text-muted">
         {tr("balance")}: {format6(balance)} {mode === "mint" ? "USDC" : "tWSK"}
       </div>
 
@@ -147,10 +147,10 @@ export function MintRedeem({ mode, onDone }: { mode: Mode; onDone: () => void })
         <Button onClick={run} disabled={isPending || confirming || !address}>
           {needsApproval ? tr("approveFirst") : mode === "mint" ? tr("requestMint") : tr("requestRedeem")}
         </Button>
-        {(isPending || confirming) && <span className="text-xs text-gray-500">{status ?? tr("loading")}</span>}
+        {(isPending || confirming) && <span className="text-xs text-muted">{status ?? tr("loading")}</span>}
       </div>
 
-      <p className="mt-3 text-[11px] text-gray-500">{tr("claimNotReady")}</p>
+      <p className="mt-3 text-[11px] text-muted">{tr("claimNotReady")}</p>
     </Card>
   );
 }

@@ -1,91 +1,89 @@
 import { useI18n } from "../i18n-react";
-import { useVaultData } from "../useVault";
-import { useEpochStart } from "../useEpochStart";
-import { format6 } from "../lib";
-import { Card, Badge } from "../components/Ui";
 import { LineChart } from "../components/LineChart";
-import { useHistory } from "../useHistory";
+import { MOCK } from "../mock";
 
-function fmtUTC(ts: bigint | null): { time: string; date: string } {
-  if (!ts) return { time: "-", date: "-" };
-  const d = new Date(Number(ts) * 1000);
-  const time = d.toLocaleTimeString("en-GB", { timeZone: "UTC", hour: "2-digit", minute: "2-digit" });
-  const date = d.toLocaleDateString("en-GB", { timeZone: "UTC", day: "2-digit", month: "short", year: "numeric" });
-  return { time: `${time} UTC`, date };
-}
-
-function Stat({
+function StatCard({
   label,
   value,
   sub,
-  big,
 }: {
   label: string;
   value: string;
   sub?: string;
-  big?: boolean;
 }) {
   return (
-    <div className="rounded-xl border border-edge bg-panel2 p-4">
-      <div className="text-xs uppercase tracking-wide text-gray-500">{label}</div>
-      <div className={`mt-1 font-semibold text-gray-900 ${big ? "text-3xl" : "text-xl"}`}>{value}</div>
-      {sub && <div className="mt-0.5 text-xs text-gray-500">{sub}</div>}
+    <div className="rounded-xl border border-edge bg-card p-4">
+      <div className="text-[10px] font-semibold uppercase tracking-wider text-subtle">{label}</div>
+      <div className="mt-2 text-[29px] font-bold leading-none text-ink">{value}</div>
+      {sub && <div className="mt-2 text-xs text-subtle">{sub}</div>}
     </div>
   );
 }
 
 export function Info() {
   const { tr } = useI18n();
-  const d = useVaultData();
-  const epochStart = useEpochStart(d.currentEpoch);
-  const { points, loading } = useHistory();
 
-  const start = fmtUTC(epochStart);
-
-  const rates = points.map((p) => ({ label: `Epoch ${p.epoch}`, value: p.rate }));
-  const supplies = points.map((p) => ({ label: `Epoch ${p.epoch}`, value: p.supply }));
+  const pricePoints = MOCK.priceHistory.map((p) => ({
+    label: `Epoch ${p.epoch}`,
+    value: p.price,
+  }));
+  const supplyPoints = MOCK.priceHistory.map((p) => ({
+    label: `Epoch ${p.epoch}`,
+    value: p.supply,
+  }));
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-sm font-semibold text-gray-700">{tr("overview")}</h1>
-        {d.woundDown ? <Badge tone="bad">{tr("woundDown")}</Badge> : <Badge tone="good">Active</Badge>}
-      </div>
-
-      {/* Big overview: 4 key stats */}
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="rounded-xl border border-edge bg-panel2 p-4">
-          <div className="text-xs uppercase tracking-wide text-gray-500">{tr("activeEpoch")}</div>
-          <div className="mt-1 text-4xl font-bold text-gray-900">#{d.currentEpoch.toString()}</div>
-          <div className="mt-0.5 text-xs text-gray-500">
-            {start.time} · {start.date}
-          </div>
-        </div>
-        <Stat label={tr("nav")} value={`${format6(d.totalNav)} USDC`} big />
-        <Stat label={tr("totalSupply")} value={`${format6(d.totalSupply)} tWSK`} big />
-        <Stat
-          label={tr("wskPrice")}
-          value={`${d.rate ? format6(d.rate, 6) : "-"} USDC`}
-          sub={tr("perShare")}
-          big
-        />
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Card
-          title={tr("chartRate")}
-          right={loading ? <span className="text-xs text-gray-500">{tr("loading")}</span> : undefined}
+      {/* 1. Testnet warning banner */}
+      <div className="flex items-center justify-between rounded-xl border border-warnborder bg-warnbg px-3 py-2.5 text-[12px] text-warntext">
+        <span>{tr("beta")}</span>
+        <a
+          href={`https://explorer.testnet.arc.io/address/0x34EFa1dE4a3f6432d65cBACb1c77783745f6b963`}
+          target="_blank"
+          rel="noreferrer"
+          className="text-link underline"
         >
-          <LineChart data={rates} color="#6ea8fe" format={(n) => n.toFixed(6)} emptyLabel={tr("noHistory")} />
-        </Card>
-        <Card title={tr("chartSupply")}>
+          {MOCK.token.symbol} · {MOCK.token.address}
+        </a>
+      </div>
+
+      {/* 2. Overview header */}
+      <div className="flex items-center justify-between px-0.5">
+        <h2 className="text-[13px] font-semibold text-ink">{tr("overview")}</h2>
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-[#CDEEDD] bg-goodbg px-2.5 py-0.5 text-[11px] font-medium text-good">
+          <span className="h-1.5 w-1.5 rounded-full bg-good" />
+          Active
+        </span>
+      </div>
+
+      {/* 3. Statistic cards 2x2 */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <StatCard label={tr("statActiveEpoch")} value={`#${MOCK.activeEpoch}`} sub={MOCK.epochStart} />
+        <StatCard label={tr("statFundNav")} value={MOCK.fundNav} />
+        <StatCard label={tr("statTotalSupply")} value={MOCK.totalSupply} />
+        <StatCard label={tr("statTWSKPrice")} value={MOCK.tWSKPrice} sub={MOCK.priceUnit} />
+      </div>
+
+      {/* 4. Charts 2x2 */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="rounded-xl border border-edge bg-card p-3.5">
+          <div className="mb-2 text-[12px] font-semibold text-ink">{tr("chartRate")}</div>
           <LineChart
-            data={supplies}
-            color="#34d399"
-            format={(n) => n.toFixed(2)}
-            emptyLabel={tr("noHistory")}
+            data={pricePoints}
+            stroke="#6C7CF5"
+            area="rgba(108,124,245,0.13)"
+            format={(n) => n.toFixed(6)}
           />
-        </Card>
+        </div>
+        <div className="rounded-xl border border-edge bg-card p-3.5">
+          <div className="mb-2 text-[12px] font-semibold text-ink">{tr("chartSupply")}</div>
+          <LineChart
+            data={supplyPoints}
+            stroke="#5FD4A8"
+            area="rgba(95,212,168,0.15)"
+            format={(n) => n.toFixed(2)}
+          />
+        </div>
       </div>
     </div>
   );
