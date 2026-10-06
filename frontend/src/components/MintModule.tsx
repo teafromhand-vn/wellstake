@@ -44,9 +44,17 @@ export function MintModule({ mode }: { mode: Mode }) {
   const onArc = chainId === arcTestnet.id;
 
   const rate = d.rate ?? 0n;
-  const receiveValue = mode === "mint" && rate > 0n ? (value * 1_000_000n) / rate : 0n;
   const feeValue = mode === "redeem" ? (value * 50n) / 10000n : 0n;
   const netValue = mode === "redeem" ? value - feeValue : 0n;
+  // Estimated output, in 6-decimals, mirroring the contract math exactly:
+  //   mint:   wskOut  = floor(usdcIn * 1e6 / rate)
+  //   redeem: usdcOut = floor(netWsk * rate / 1e6)
+  const receiveRaw =
+    value <= 0n || rate <= 0n
+      ? 0n
+      : mode === "mint"
+        ? (value * 1_000_000n) / rate
+        : (netValue * rate) / 1_000_000n;
 
   // Balance display (real when connected, demo otherwise).
   const tWskBal = d.wskBalance !== undefined ? `${format6(d.wskBalance)} tWSK` : MOCK_MINT.twskBalance;
@@ -175,15 +183,7 @@ export function MintModule({ mode }: { mode: Mode }) {
           />
           <ReadOnlyBox
             label={tr("receiveEstimate")}
-            value={
-              value > 0n
-                ? mode === "mint"
-                  ? format6(receiveValue, 6)
-                  : rate > 0n
-                    ? format6(netValue * rate, 6)
-                    : "0"
-                : "0"
-            }
+            value={value > 0n ? format6(receiveRaw, 6) : "0"}
             token={mode === "mint" ? "tWSK" : "USDC"}
           />
         </div>
