@@ -6,7 +6,7 @@ import {Test} from "forge-std/Test.sol";
 import {WellstakeVault} from "../src/WellstakeVault.sol";
 import {WellstakeToken} from "../src/WellstakeToken.sol";
 import {PendingRequestNFT} from "../src/PendingRequestNFT.sol";
-import {MockUSDC} from "./mocks/MockUSDC.sol";
+import {MockUSDC} from "../src/mocks/MockUSDC.sol";
 
 abstract contract WellstakeTestBase is Test {
     uint256 internal constant INITIAL_NAV = 38_462;

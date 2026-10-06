@@ -3,7 +3,7 @@ pragma solidity 0.8.24;
 
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-/// @dev 6-decimal USDC stand-in for local tests.
+/// @dev 6-decimal USDC stand-in used by tests and testnet deployments.
 contract MockUSDC is ERC20 {
     constructor() ERC20("USD Coin", "USDC") {}
 

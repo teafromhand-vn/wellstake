@@ -6,7 +6,7 @@ import {Test} from "forge-std/Test.sol";
 import {WellstakeVault} from "../../src/WellstakeVault.sol";
 import {WellstakeToken} from "../../src/WellstakeToken.sol";
 import {PendingRequestNFT} from "../../src/PendingRequestNFT.sol";
-import {MockUSDC} from "../mocks/MockUSDC.sol";
+import {MockUSDC} from "../../src/mocks/MockUSDC.sol";
 
 /// @dev Drives randomized Vault interactions for the invariant suite. Action functions must not
 ///      revert, so invalid inputs are skipped rather than reverted.

@@ -7,7 +7,7 @@ import {StdInvariant} from "forge-std/StdInvariant.sol";
 import {WellstakeVault} from "../../src/WellstakeVault.sol";
 import {WellstakeToken} from "../../src/WellstakeToken.sol";
 import {PendingRequestNFT} from "../../src/PendingRequestNFT.sol";
-import {MockUSDC} from "../mocks/MockUSDC.sol";
+import {MockUSDC} from "../../src/mocks/MockUSDC.sol";
 import {VaultHandler} from "./VaultHandler.sol";
 
 contract VaultInvariantTest is StdInvariant, Test {
