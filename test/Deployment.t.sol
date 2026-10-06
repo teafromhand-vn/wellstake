@@ -2,62 +2,61 @@
 pragma solidity 0.8.24;
 
 import {WellstakeTestBase} from "./WellstakeTestBase.sol";
+import {LiquidWallet} from "../src/LiquidWallet.sol";
 import {WellstakeVault} from "../src/WellstakeVault.sol";
 
 contract DeploymentTest is WellstakeTestBase {
-    function test_DEP001_initialTokenConfiguration() public view {
+    function test_tokenConfig() public view {
         assertEq(wsk.name(), "Wellstake");
         assertEq(wsk.symbol(), "WSK");
         assertEq(wsk.decimals(), 6);
-        assertEq(wsk.vault(), address(vault));
+        assertEq(wsk.authority(), address(liquid));
+    }
+
+    function test_nftConfig() public view {
+        assertEq(nft.name(), "Wellstake Pending Request");
+        assertEq(nft.symbol(), "WSKPR");
+        assertEq(nft.authority(), address(liquid));
+    }
+
+    function test_liquidConfig() public view {
+        assertEq(address(liquid.usdc()), address(usdc));
+        assertEq(liquid.manager(), manager);
+        assertEq(liquid.vaultWallet(), vaultWallet);
+        assertEq(liquid.vault(), address(vault));
+        assertEq(liquid.totalNav(), INITIAL_NAV);
+        assertEq(liquid.rate(), INITIAL_NAV);
+    }
+
+    function test_vaultConfig() public view {
         assertEq(address(vault.usdc()), address(usdc));
-        assertEq(vault.manager(), manager);
+        assertEq(vault.liquidWallet(), address(liquid));
         assertEq(vault.vaultWallet(), vaultWallet);
-        assertEq(vault.liquidWallet(), liquidWallet);
-        assertEq(vault.feeWallet(), feeWallet);
     }
 
-    function test_DEP002_epochZeroState() public view {
-        (uint256 nav, uint256 startBlock, uint256 endBlock, bool finalized) = vault.epochs(0);
-        assertEq(nav, INITIAL_NAV);
-        assertEq(startBlock, block.number);
-        assertEq(endBlock, block.number);
-        assertTrue(finalized);
-        assertEq(vault.currentEpoch(), 1);
-
-        // Epoch 1 is open and has no finalized NAV yet.
-        (uint256 nav1, uint256 start1, uint256 end1, bool finalized1) = vault.epochs(1);
-        assertEq(nav1, 0);
-        assertEq(start1, block.number);
-        assertEq(end1, 0);
-        assertFalse(finalized1);
-    }
-
-    function test_DEP003_requestCounterStartsAtOne() public {
-        assertEq(vault.nextRequestId(), 1);
-
-        uint256 id = _mint(alice, 10 * ONE_USDC);
+    function test_requestCounterStartsAtOne() public {
+        assertEq(liquid.nextRequestId(), 1);
+        uint256 id = _requestMint(alice, 10 * ONE);
         assertEq(id, 1);
-
-        // requestId 0 is never a valid request.
-        vm.expectRevert(WellstakeVault.RequestNotFound.selector);
-        vault.claim(0);
     }
 
-    function test_DEP_revertsOnZeroConfiguration() public {
-        vm.expectRevert(WellstakeVault.ZeroAddress.selector);
-        new WellstakeVault(address(0), manager, vaultWallet, liquidWallet, feeWallet);
+    function test_setVaultOnlyOnce() public {
+        vm.prank(manager);
+        vm.expectRevert(LiquidWallet.VaultAlreadySet.selector);
+        liquid.setVault(address(0xBEEF));
+    }
+
+    function test_revertsOnZeroConfig() public {
+        vm.expectRevert(LiquidWallet.ZeroAddress.selector);
+        new LiquidWallet(address(0), manager, vaultWallet);
+
+        vm.expectRevert(LiquidWallet.ZeroAddress.selector);
+        new LiquidWallet(address(usdc), address(0), vaultWallet);
+
+        vm.expectRevert(LiquidWallet.ZeroAddress.selector);
+        new LiquidWallet(address(usdc), manager, address(0));
 
         vm.expectRevert(WellstakeVault.ZeroAddress.selector);
-        new WellstakeVault(address(usdc), address(0), vaultWallet, liquidWallet, feeWallet);
-
-        vm.expectRevert(WellstakeVault.ZeroAddress.selector);
-        new WellstakeVault(address(usdc), manager, address(0), liquidWallet, feeWallet);
-
-        vm.expectRevert(WellstakeVault.ZeroAddress.selector);
-        new WellstakeVault(address(usdc), manager, vaultWallet, address(0), feeWallet);
-
-        vm.expectRevert(WellstakeVault.ZeroAddress.selector);
-        new WellstakeVault(address(usdc), manager, vaultWallet, liquidWallet, address(0));
+        new WellstakeVault(address(0), address(liquid), vaultWallet);
     }
 }
