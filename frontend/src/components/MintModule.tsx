@@ -109,7 +109,6 @@ export function MintModule({ mode }: { mode: Mode }) {
   }
 
   const inputToken = mode === "mint" ? "USDC" : "tWSK";
-  const outToken = mode === "mint" ? "tWSK" : "USDC";
 
   return (
     <div className="relative">
@@ -162,37 +161,31 @@ export function MintModule({ mode }: { mode: Mode }) {
           </div>
         </div>
 
-        {/* Balance + fee */}
-        <div className="mt-2 flex items-center justify-between text-[11px] text-muted">
-          <span>
-            {tr("balance")}: {format6(balance) || (DEMO ? "1.2506" : "0")} {inputToken}
-          </span>
-          <span>
-            {tr("feeShort")}: {mode === "redeem" ? format6(feeValue) || "0" : "0"} {outToken}
-          </span>
+        {/* Balance */}
+        <div className="mt-2 text-[11px] text-muted">
+          {tr("balance")}: {format6(balance) || (DEMO ? "1.2506" : "0")} {inputToken}
         </div>
 
-        {/* Output previews */}
-        <div className="mt-4 grid grid-cols-2 gap-3">
-          {mode === "redeem" ? (
-            <>
-              <ReadOnlyBox label={tr("burnAmount")} value={value > 0n ? format6(netValue) : "0"} token="tWSK" />
-              <ReadOnlyBox
-                label={tr("receiveEstimate")}
-                value={value > 0n && rate > 0n ? format6(netValue * rate, 6) : "0"}
-                token="USDC"
-              />
-            </>
-          ) : (
-            <>
-              <ReadOnlyBox label={tr("receive")} value={value > 0n ? format6(receiveValue) : "0"} token="tWSK" />
-              <ReadOnlyBox
-                label={tr("receiveEstimate")}
-                value={value > 0n ? format6(receiveValue) : "0"}
-                token="tWSK"
-              />
-            </>
-          )}
+        {/* Output previews: Fee + Receive (estimated) */}
+        <div className="mt-3 grid grid-cols-2 gap-3">
+          <ReadOnlyBox
+            label={tr("fee")}
+            value={mode === "redeem" && value > 0n ? format6(feeValue, 6) : "0"}
+            token="tWSK"
+          />
+          <ReadOnlyBox
+            label={tr("receiveEstimate")}
+            value={
+              value > 0n
+                ? mode === "mint"
+                  ? format6(receiveValue, 6)
+                  : rate > 0n
+                    ? format6(netValue * rate, 6)
+                    : "0"
+                : "0"
+            }
+            token={mode === "mint" ? "tWSK" : "USDC"}
+          />
         </div>
 
         {/* Submit */}
