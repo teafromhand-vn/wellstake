@@ -5,7 +5,7 @@ import { useI18n } from "../i18n-react";
 import { Button, Card, Field, Row } from "../components/Ui";
 import { usePopup } from "../components/Popup";
 import { liquidWalletAbi } from "../abi";
-import { CONTRACTS, ZERO_ADDRESS } from "../config";
+import { CONTRACTS, EXPLORER, ZERO_ADDRESS } from "../config";
 import { errMessage, shortAddr } from "../lib";
 import { useVaultData } from "../useVault";
 import { useNoindex } from "../useNoindex";
@@ -144,7 +144,7 @@ export function AdminPage() {
           {confirming ? tr("loading") : isSuccess ? tr("txSuccess") : tr("txSubmitted")}{" "}
           <a
             className="text-accent underline"
-            href={`https://explorer.testnet.arc.io/tx/${txHash}`}
+            href={`${EXPLORER}/tx/${txHash}`}
             target="_blank"
             rel="noreferrer"
           >

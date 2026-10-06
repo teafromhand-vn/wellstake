@@ -3,7 +3,7 @@ import { useAccount, useWriteContract, useWaitForTransactionReceipt, useChainId 
 import { useI18n } from "../i18n-react";
 import { usePopup } from "./Popup";
 import { erc20Abi, liquidWalletAbi } from "../abi";
-import { CONTRACTS, arcTestnet } from "../config";
+import { CONTRACTS, opMainnet } from "../config";
 import { format6, parse6, errMessage } from "../lib";
 import { useVaultData } from "../useVault";
 import { DEMO, MOCK_MINT } from "../mock";
@@ -41,7 +41,7 @@ export function MintModule({ mode }: { mode: Mode }) {
   const allowance = mode === "mint" ? d.usdcAllowance : d.wskAllowance;
   const balance = mode === "mint" ? d.usdcBalance : d.wskBalance;
   const needsApproval = allowance !== undefined && value > 0n && allowance < value;
-  const onArc = chainId === arcTestnet.id;
+  const onArc = chainId === opMainnet.id;
 
   const rate = d.rate ?? 0n;
   const feeValue = mode === "redeem" ? (value * 50n) / 10000n : 0n;
@@ -57,7 +57,7 @@ export function MintModule({ mode }: { mode: Mode }) {
         : (netValue * rate) / 1_000_000n;
 
   // Balance display (real when connected, demo otherwise).
-  const tWskBal = d.wskBalance !== undefined ? `${format6(d.wskBalance)} tWSK` : MOCK_MINT.twskBalance;
+  const tWskBal = d.wskBalance !== undefined ? `${format6(d.wskBalance)} wskBV` : MOCK_MINT.wskBVBalance;
   const usdcAvail = d.usdcBalance !== undefined ? `${format6(d.usdcBalance)} USDC` : MOCK_MINT.usdcAvailable;
 
   const insufficient = isConnected && balance !== undefined && value > balance;

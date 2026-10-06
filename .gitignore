@@ -6,6 +6,7 @@ broadcast/
 # Env
 .env
 .env.*
+!.env.sample
 
 # OS / editor
 .DS_Store

@@ -1,6 +1,7 @@
 import { useI18n } from "../i18n-react";
 import { LineChart } from "../components/LineChart";
 import { MOCK } from "../mock";
+import { CONTRACTS, EXPLORER, SHARE } from "../config";
 
 function StatCard({
   label,
@@ -38,12 +39,12 @@ export function Info() {
       <div className="flex items-center justify-between rounded-xl border border-warnborder bg-warnbg px-3 py-2.5 text-[12px] text-warntext">
         <span>{tr("beta")}</span>
         <a
-          href={`https://explorer.testnet.arc.io/address/0x34EFa1dE4a3f6432d65cBACb1c77783745f6b963`}
+          href={`${EXPLORER}/address/${CONTRACTS.liquidWallet}`}
           target="_blank"
           rel="noreferrer"
           className="text-link underline"
         >
-          {MOCK.token.symbol} · {MOCK.token.address}
+          {SHARE.symbol} · {CONTRACTS.liquidWallet.slice(0, 8)}...
         </a>
       </div>
 
@@ -61,7 +62,7 @@ export function Info() {
         <StatCard label={tr("statActiveEpoch")} value={`#${MOCK.activeEpoch}`} sub={MOCK.epochStart} />
         <StatCard label={tr("statFundNav")} value={MOCK.fundNav} />
         <StatCard label={tr("statTotalSupply")} value={MOCK.totalSupply} />
-        <StatCard label={tr("statTWSKPrice")} value={MOCK.tWSKPrice} sub={MOCK.priceUnit} />
+        <StatCard label={tr("statTokenPrice")} value={MOCK.wskBVPrice} sub={MOCK.priceUnit} />
       </div>
 
       {/* 4. Charts 2x2 */}

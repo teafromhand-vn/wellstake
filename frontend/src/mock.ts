@@ -6,10 +6,10 @@ export const MOCK = {
   activeEpoch: 4,
   epochStart: "18:23 UTC · 06 Oct 2026",
   fundNav: "0.0827 USDC",
-  totalSupply: "0.2599 tWSK",
-  tWSKPrice: "0.318204 USDC",
-  priceUnit: "USDC / tWSK",
-  token: { symbol: "tWSK", address: "0x34FEa..." },
+  totalSupply: "0.2599 wskBV",
+  wskBVPrice: "0.318204 USDC",
+  priceUnit: "USDC / wskBV",
+  token: { symbol: "wskBV", address: "0xA7f5..." },
   // Shape roughly: low -> flat -> strong increase -> decrease -> flat
   priceHistory: [
     { epoch: 0, price: 0.038462, supply: 0.2599 },
@@ -36,7 +36,7 @@ export const MOCK_REQUESTS: MockRequest[] = [
 ];
 
 export const MOCK_MINT = {
-  twskBalance: "123.456 tWSK",
+  wskBVBalance: "123.456 wskBV",
   usdcAvailable: "1.23456 USDC",
 };
 

@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { useReadContract } from "wagmi";
 import { createPublicClient, http } from "viem";
-import { arcTestnet, CONTRACTS } from "./config";
+import { opMainnet, CONTRACTS } from "./config";
 import { liquidWalletAbi } from "./abi";
 
-const client = createPublicClient({ chain: arcTestnet, transport: http() });
+const client = createPublicClient({ chain: opMainnet, transport: http() });
 
 /// Returns the open epoch's start time (UTC) by reading its startBlock and fetching the block
 /// timestamp.
