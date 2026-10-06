@@ -65,9 +65,8 @@ contract MintTest is WellstakeTestBase {
 
     function test_claimAfterNavUpdate() public {
         _requestMint(alice, 100 * ONE);
-        _setNav(0); // supply is 0 -> rate unchanged
-        _setNav(200 * ONE); // still supply 0 -> rate unchanged
-        // rate stays INITIAL_NAV because supply == 0
+        _finalizeEpoch(0); // supply is 0 -> rate unchanged (INITIAL_NAV)
+        _finalizeEpoch(200 * ONE); // still no supply yet -> rate unchanged
         assertEq(liquid.rate(), INITIAL_NAV);
     }
 

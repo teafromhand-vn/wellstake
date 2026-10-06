@@ -69,11 +69,6 @@ abstract contract WellstakeTestBase is Test {
         id = liquid.requestRedeem(grossWsk);
     }
 
-    function _setNav(uint256 nav) internal {
-        vm.prank(manager);
-        liquid.setNav(nav);
-    }
-
     function _finalizeEpoch(uint256 nav) internal {
         vm.prank(manager);
         liquid.finalizeEpoch(nav);

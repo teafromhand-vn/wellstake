@@ -8,7 +8,7 @@ import {
 } from "wagmi";
 import { useI18n } from "../i18n-react";
 import { Button, Card } from "./Ui";
-import { useToast } from "./Toast";
+import { usePopup } from "./Popup";
 import { liquidWalletAbi } from "../abi";
 import { CONTRACTS } from "../config";
 import { format6, errMessage } from "../lib";
@@ -30,7 +30,7 @@ export function Requests() {
   const { tr } = useI18n();
   const { address } = useAccount();
   const d = useVaultData();
-  const { push } = useToast();
+  const { notify } = usePopup();
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const { data: nextIdData, refetch: refetchNext } = useReadContract({
@@ -91,7 +91,7 @@ export function Requests() {
       refetchNext();
       d.refetch();
       setSelected(new Set());
-      push(tr("txSuccess"), "good");
+      notify("success", tr("notifySuccessTitle"), tr("notifySuccessDesc"));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSuccess, txHash]);
@@ -105,9 +105,9 @@ export function Requests() {
         args: [id],
       });
       setTxHash(hash);
-      push(tr("txSubmitted") + " " + hash.slice(0, 10) + "...", "info");
+      notify("info", tr("notifyClaimTitle"), tr("notifySubmittedDesc"));
     } catch (e) {
-      push(errMessage(e), "bad");
+      notify("error", tr("notifyErrorTitle"), errMessage(e));
     }
   }
 
@@ -122,9 +122,9 @@ export function Requests() {
         args: [list],
       });
       setTxHash(hash);
-      push(tr("txSubmitted") + " " + hash.slice(0, 10) + "...", "info");
+      notify("info", tr("notifyClaimTitle"), tr("notifySubmittedDesc"));
     } catch (e) {
-      push(errMessage(e), "bad");
+      notify("error", tr("notifyErrorTitle"), errMessage(e));
     }
   }
 

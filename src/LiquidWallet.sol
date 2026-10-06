@@ -70,7 +70,6 @@ contract LiquidWallet is ReentrancyGuard {
     mapping(uint256 => Request) public requests;
 
     event VaultSet(address indexed vault);
-    event NavSet(uint256 indexed epoch, uint256 totalNav, uint256 rate);
     event EpochFinalized(uint256 indexed epoch, uint256 nav, uint256 rate, uint256 endBlock);
     event MintRequested(
         uint256 indexed requestId, address indexed user, uint256 usdcAmount, uint256 indexed epoch
@@ -164,24 +163,9 @@ contract LiquidWallet is ReentrancyGuard {
         emit VaultSet(vault_);
     }
 
-    /// @notice Report the fund NAV (total USDC value) for the open epoch. Only the manager.
-    ///         The rate is derived as NAV / totalSupply; with zero supply the rate is unchanged.
-    function setNav(uint256 nav_) external onlyManager {
-        if (woundDown) revert AlreadyWoundDown();
-        totalNav = nav_;
-
-        uint256 supply = wsk.totalSupply();
-        if (supply > 0) {
-            rate = Math.mulDiv(nav_, NAV_SCALE, supply);
-        }
-
-        epochs[currentEpoch].nav = nav_;
-        epochs[currentEpoch].rate = rate;
-
-        emit NavSet(currentEpoch, nav_, rate);
-    }
-
     /// @notice Finalize the open epoch (locking its NAV and rate) and open the next epoch.
+    /// @dev The only way to set a NAV. The rate is derived as NAV / totalSupply; with zero supply
+    ///      the prior rate is carried over.
     function finalizeEpoch(uint256 nav_) external onlyManager {
         if (woundDown) revert AlreadyWoundDown();
         _finalize(nav_);

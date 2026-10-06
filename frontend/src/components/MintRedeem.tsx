@@ -7,7 +7,7 @@ import {
 } from "wagmi";
 import { useI18n } from "../i18n-react";
 import { Button, Card, Field } from "./Ui";
-import { useToast } from "./Toast";
+import { usePopup } from "./Popup";
 import { erc20Abi, liquidWalletAbi } from "../abi";
 import { CONTRACTS, arcTestnet } from "../config";
 import { format6, parse6, errMessage } from "../lib";
@@ -20,7 +20,7 @@ export function MintRedeem({ onDone }: { onDone: () => void }) {
   const { address } = useAccount();
   const chainId = useChainId();
   const d = useVaultData();
-  const { push } = useToast();
+  const { notify } = usePopup();
   const [mode, setMode] = useState<Mode>("mint");
   const [amount, setAmount] = useState("");
   const [status, setStatus] = useState<string | null>(null);
@@ -40,7 +40,7 @@ export function MintRedeem({ onDone }: { onDone: () => void }) {
   useEffect(() => {
     if (isSuccess && txHash) {
       d.refetch();
-      push(tr("txSuccess"), "good");
+      notify("success", tr("notifySuccessTitle"), tr("notifySuccessDesc"));
       onDone();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -62,7 +62,7 @@ export function MintRedeem({ onDone }: { onDone: () => void }) {
           args: [spender, value],
         });
         setTxHash(hash);
-        push(tr("txSubmitted") + " " + hash.slice(0, 10) + "...", "info");
+        notify("info", tr("notifyApproveTitle"), tr("notifyApproveDesc"));
         return;
       }
 
@@ -82,10 +82,10 @@ export function MintRedeem({ onDone }: { onDone: () => void }) {
               args: [value],
             });
       setTxHash(hash);
-      push(tr("txSubmitted") + " " + hash.slice(0, 10) + "...", "info");
+      notify("info", tr("notifySubmittedTitle"), tr("notifySubmittedDesc"));
     } catch (e) {
       setStatus(null);
-      push(errMessage(e), "bad");
+      notify("error", tr("notifyErrorTitle"), errMessage(e));
     }
   }
 

@@ -166,13 +166,6 @@ export const liquidWalletAbi = [
   },
   {
     type: "function",
-    name: "setNav",
-    stateMutability: "nonpayable",
-    inputs: [{ name: "nav_", type: "uint256" }],
-    outputs: [],
-  },
-  {
-    type: "function",
     name: "finalizeEpoch",
     stateMutability: "nonpayable",
     inputs: [{ name: "nav_", type: "uint256" }],
@@ -229,15 +222,6 @@ export const liquidWalletAbi = [
       { name: "amount", type: "uint256" },
     ],
     outputs: [],
-  },
-  {
-    type: "event",
-    name: "NavSet",
-    inputs: [
-      { indexed: true, name: "epoch", type: "uint256" },
-      { indexed: false, name: "totalNav", type: "uint256" },
-      { indexed: false, name: "rate", type: "uint256" },
-    ],
   },
   {
     type: "event",

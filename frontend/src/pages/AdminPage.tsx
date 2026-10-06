@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { useI18n } from "../i18n-react";
 import { Button, Card, Field, Row } from "../components/Ui";
-import { useToast } from "../components/Toast";
+import { usePopup } from "../components/Popup";
 import { liquidWalletAbi } from "../abi";
 import { CONTRACTS, ZERO_ADDRESS } from "../config";
 import { errMessage, shortAddr } from "../lib";
@@ -15,10 +15,10 @@ export function AdminPage() {
   const { tr } = useI18n();
   const { address } = useAccount();
   const d = useVaultData();
-  const { push } = useToast();
+  const { notify } = usePopup();
 
-  const [nav, setNav] = useState("");
   const [finalNav, setFinalNav] = useState("");
+  const [pauseNav, setPauseNav] = useState("");
   const { writeContractAsync, isPending } = useWriteContract();
   const [txHash, setTxHash] = useState<`0x${string}` | undefined>();
   const { isLoading: confirming, isSuccess } = useWaitForTransactionReceipt({ hash: txHash });
@@ -28,7 +28,7 @@ export function AdminPage() {
   useEffect(() => {
     if (isSuccess && txHash) {
       d.refetch();
-      push(tr("txSuccess"), "good");
+      notify("success", tr("notifySuccessTitle"), tr("notifySuccessDesc"));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSuccess, txHash]);
@@ -38,7 +38,7 @@ export function AdminPage() {
     return BigInt(Math.round(Number(v) * 1e6));
   }
 
-  async function call(functionName: "setNav" | "finalizeEpoch" | "pause", value: string) {
+  async function call(functionName: "finalizeEpoch" | "pause", value: string) {
     try {
       const v = toUnits(value);
       if (v <= 0n) throw new Error("Value must be > 0");
@@ -49,10 +49,24 @@ export function AdminPage() {
         args: [v],
       });
       setTxHash(hash);
-      push(tr("txSubmitted") + " " + hash.slice(0, 10) + "...", "info");
+      notify(
+        "info",
+        functionName === "finalizeEpoch" ? tr("notifyFinalizeTitle") : tr("notifyPauseTitle"),
+        tr("notifySubmittedDesc"),
+      );
     } catch (e) {
-      push(errMessage(e), "bad");
+      notify("error", tr("notifyErrorTitle"), errMessage(e));
     }
+  }
+
+  function onFinalize() {
+    if (!window.confirm(tr("confirmFinalize"))) return;
+    call("finalizeEpoch", finalNav);
+  }
+
+  function onPause() {
+    if (!window.confirm(tr("confirmPause"))) return;
+    call("pause", pauseNav || finalNav);
   }
 
   return (
@@ -76,24 +90,15 @@ export function AdminPage() {
             <Row k={tr("activeEpoch")} v={d.currentEpoch.toString()} />
             <Row k={tr("nav")} v={`${d.totalNav ? Number(d.totalNav) / 1e6 : 0} USDC`} />
             <Row k={tr("rate")} v={d.rate ? (Number(d.rate) / 1e6).toString() : "-"} />
+            <Row k={tr("woundDown")} v={d.woundDown ? "yes" : "no"} />
           </div>
         )}
       </Card>
 
       {isManager && (
         <>
-          <Card title={tr("currentNavLabel")}>
-            <div className="flex items-end gap-2">
-              <div className="flex-1">
-                <Field label={tr("newNav")} value={nav} onChange={setNav} placeholder="100.00" suffix="USDC" />
-              </div>
-              <Button onClick={() => call("setNav", nav)} disabled={isPending || confirming}>
-                {tr("update")}
-              </Button>
-            </div>
-          </Card>
-
           <Card title={tr("finalizeEpoch")}>
+            <p className="mb-2 text-xs text-gray-500">{tr("confirmFinalize")}</p>
             <div className="flex items-end gap-2">
               <div className="flex-1">
                 <Field
@@ -104,26 +109,27 @@ export function AdminPage() {
                   suffix="USDC"
                 />
               </div>
-              <Button onClick={() => call("finalizeEpoch", finalNav)} disabled={isPending || confirming}>
+              <Button onClick={onFinalize} disabled={isPending || confirming || d.woundDown}>
                 {tr("finalizeEpoch")}
               </Button>
             </div>
           </Card>
 
           <Card title={tr("pauseProtocol")}>
+            <p className="mb-2 text-xs text-gray-500">{tr("confirmPause")}</p>
             <div className="flex items-end gap-2">
               <div className="flex-1">
                 <Field
                   label={tr("finalNav")}
-                  value={finalNav}
-                  onChange={setFinalNav}
+                  value={pauseNav}
+                  onChange={setPauseNav}
                   placeholder="100.00"
                   suffix="USDC"
                 />
               </div>
               <Button
                 variant="danger"
-                onClick={() => call("pause", finalNav)}
+                onClick={onPause}
                 disabled={isPending || confirming || d.woundDown}
               >
                 {tr("pauseProtocol")}

@@ -7,10 +7,10 @@ import {WellstakeVault} from "../src/WellstakeVault.sol";
 import {ReentrantUSDC} from "./mocks/ReentrantUSDC.sol";
 
 contract SecurityTest is WellstakeTestBase {
-    function test_onlyManagerSetsNav() public {
+    function test_onlyManagerFinalizesEpoch() public {
         vm.prank(alice);
         vm.expectRevert(LiquidWallet.OnlyManager.selector);
-        liquid.setNav(1);
+        liquid.finalizeEpoch(1);
     }
 
     function test_onlyManagerSetsVault() public {

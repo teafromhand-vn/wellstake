@@ -5,7 +5,7 @@ import { WagmiProvider } from "wagmi";
 import { BrowserRouter } from "react-router-dom";
 import { wagmiConfig } from "./wagmi";
 import { I18nProvider } from "./i18n-react";
-import { ToastProvider } from "./components/Toast";
+import { PopupProvider } from "./components/Popup";
 import App from "./App";
 import "./index.css";
 
@@ -16,11 +16,11 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
         <I18nProvider>
-          <ToastProvider>
+          <PopupProvider>
             <BrowserRouter>
               <App />
             </BrowserRouter>
-          </ToastProvider>
+          </PopupProvider>
         </I18nProvider>
       </QueryClientProvider>
     </WagmiProvider>

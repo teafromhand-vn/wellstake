@@ -65,9 +65,7 @@ export const t: Dict = {
     en: "Visible only for the manager account.",
     vi: "Chỉ hiển thị cho tài khoản manager.",
   },
-  setNav: { en: "Set NAV", vi: "Đặt NAV" },
   newNav: { en: "New NAV (USDC, total fund value)", vi: "NAV mới (USDC, tổng giá trị quỹ)" },
-  update: { en: "Update", vi: "Cập nhật" },
   notManager: { en: "Your account is not the manager.", vi: "Tài khoản của bạn không phải manager." },
   vaultLinked: { en: "Investment vault linked", vi: "Đã liên kết vault đầu tư" },
 
@@ -93,4 +91,36 @@ export const t: Dict = {
   currentNavLabel: { en: "Current NAV report", vi: "NAV báo cáo hiện tại" },
   claimNotReady: { en: "Claim not ready (epoch open)", vi: "Chưa claim được (epoch đang mở)" },
   finalNav: { en: "Final NAV", vi: "NAV cuối" },
+
+  notifySubmittedTitle: { en: "Transaction submitted", vi: "Đã gửi giao dịch" },
+  notifySubmittedDesc: {
+    en: "Waiting for confirmation...",
+    vi: "Đang chờ xác nhận...",
+  },
+  notifySuccessTitle: { en: "Success", vi: "Thành công" },
+  notifySuccessDesc: {
+    en: "Transaction confirmed on-chain.",
+    vi: "Giao dịch đã được xác nhận on-chain.",
+  },
+  notifyErrorTitle: { en: "Something went wrong", vi: "Đã xảy ra lỗi" },
+  notifyApproveTitle: { en: "Approve token", vi: "Cấp quyền token" },
+  notifyApproveDesc: {
+    en: "Confirm the approval in your wallet, then create the request.",
+    vi: "Xác nhận cấp quyền trong ví, sau đó tạo yêu cầu.",
+  },
+  notifyClaimTitle: { en: "Claim submitted", vi: "Đã gửi claim" },
+  notifyFinalizeTitle: { en: "Epoch finalized", vi: "Đã chốt epoch" },
+  notifyFinalizeDesc: {
+    en: "The epoch NAV is locked and a new epoch has opened.",
+    vi: "NAV của epoch đã được khóa và epoch mới đã mở.",
+  },
+  notifyPauseTitle: { en: "Fund wound down", vi: "Quỹ đã đóng" },
+  confirmFinalize: {
+    en: "Finalize this epoch? This locks the NAV and cannot be undone.",
+    vi: "Chốt epoch này? NAV sẽ bị khóa và không thể hoàn tác.",
+  },
+  confirmPause: {
+    en: "Wind down the fund? This is irreversible.",
+    vi: "Đóng quỹ? Thao tác này không thể hoàn tác.",
+  },
 };

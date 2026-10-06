@@ -64,9 +64,9 @@ contract SmokeTest is Script {
         _scn("mint: request created + NFT", nft.ownerOf(mintId) == user);
         _scn("mint: USDC held by liquid", usdc.balanceOf(address(liquid)) >= amount);
 
-        // Manager sets NAV so rate reflects supply; keep rate = 1.0 for a predictable test.
+        // Manager finalizes the epoch so the mint request becomes claimable.
         vm.startBroadcast(managerKey);
-        liquid.setNav(wsk.totalSupply() > 0 ? liquid.totalNav() : amount);
+        liquid.finalizeEpoch(amount);
         vm.stopBroadcast();
 
         uint256 wskBefore = wsk.balanceOf(user);
