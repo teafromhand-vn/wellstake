@@ -1,10 +1,10 @@
-import { MintRedeem } from "../components/MintRedeem";
+import { MintModule } from "../components/MintModule";
 import { Requests } from "../components/Requests";
 
 export function Burn() {
   return (
-    <div className="grid gap-4 md:grid-cols-2">
-      <MintRedeem mode="redeem" onDone={() => {}} />
+    <div className="mx-auto w-full max-w-[430px] space-y-5">
+      <MintModule mode="redeem" />
       <Requests />
     </div>
   );

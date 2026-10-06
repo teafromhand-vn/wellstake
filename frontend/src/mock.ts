@@ -19,3 +19,24 @@ export const MOCK = {
     { epoch: 4, price: 0.318204, supply: 0.2599 },
   ] as EpochPoint[],
 };
+
+// Demo mode: show mock values/rows so the UI can be reviewed without a wallet.
+export const DEMO = true;
+
+export type MockRequest = {
+  id: number;
+  type: "MINT" | "REDEEM";
+  epoch: number;
+  amount: string;
+  status: "Claimed" | "Pending" | "Not finalized";
+};
+
+export const MOCK_REQUESTS: MockRequest[] = [
+  { id: 1, type: "MINT", epoch: 1, amount: "0.01 USDC", status: "Claimed" },
+];
+
+export const MOCK_MINT = {
+  twskBalance: "123.456 tWSK",
+  usdcAvailable: "1.23456 USDC",
+};
+

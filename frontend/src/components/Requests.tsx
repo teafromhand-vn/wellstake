@@ -7,12 +7,12 @@ import {
   useWaitForTransactionReceipt,
 } from "wagmi";
 import { useI18n } from "../i18n-react";
-import { Button, Card } from "./Ui";
 import { usePopup } from "./Popup";
 import { liquidWalletAbi } from "../abi";
 import { CONTRACTS } from "../config";
 import { format6, errMessage } from "../lib";
 import { useVaultData } from "../useVault";
+import { DEMO, MOCK_REQUESTS } from "../mock";
 
 type Req = {
   id: bigint;
@@ -107,69 +107,93 @@ export function Requests() {
     }
   }
 
+  const showDemo = DEMO && (!address || reqs.length === 0);
+  const demoRows = showDemo ? MOCK_REQUESTS : [];
+
   return (
-    <Card
-      title={tr("myRequests")}
-      right={
-        <div className="flex items-center gap-2">
+    <div className="rounded-xl border border-edge bg-card p-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-[13px] font-semibold text-ink">{tr("myRequests")}</h3>
+        <div className="flex items-center gap-3">
           <span className="hidden text-[11px] text-muted sm:inline">{tr("claimAllHint")}</span>
-          <Button variant="ghost" disabled={claimable.length === 0 || isPending || confirming} onClick={claimAll}>
+          <button
+            disabled={claimable.length === 0 || isPending || confirming}
+            onClick={claimAll}
+            className="rounded-lg border border-edge bg-inset px-3 py-1.5 text-[12px] font-semibold text-ink transition hover:bg-[#ECEEF2] disabled:cursor-not-allowed disabled:opacity-40"
+          >
             {tr("claimMany")} ({claimable.length})
-          </Button>
+          </button>
         </div>
-      }
-    >
-      {!address ? (
-        <p className="py-6 text-center text-sm text-muted">{tr("connect")}</p>
-      ) : reqs.length === 0 ? (
-        <p className="py-6 text-center text-sm text-muted">{tr("noRequests")}</p>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-edge text-left text-xs text-muted">
-                <th className="py-2 pr-2">{tr("id")}</th>
-                <th className="py-2 pr-2">{tr("type")}</th>
-                <th className="py-2 pr-2">{tr("epoch")}</th>
-                <th className="py-2 pr-2 text-right">{tr("amount")}</th>
-                <th className="py-2 pr-2">{tr("status")}</th>
+      </div>
+
+      <div className="mt-3 overflow-x-auto">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-edge text-left text-[11px] font-medium text-subtle">
+              <th className="py-2 pr-2 font-medium">{tr("id")}</th>
+              <th className="py-2 pr-2 font-medium">{tr("type")}</th>
+              <th className="py-2 pr-2 font-medium">{tr("epoch")}</th>
+              <th className="py-2 pr-2 text-right font-medium">{tr("amount")}</th>
+              <th className="py-2 pr-2 font-medium">{tr("status")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {demoRows.map((r) => (
+              <tr key={`demo-${r.id}`} className="border-b border-edge/60 last:border-0">
+                <td className="py-2.5 pr-2 text-[13px] text-ink">#{r.id}</td>
+                <td className="py-2.5 pr-2">
+                  <span className="rounded bg-goodbg px-1.5 py-0.5 text-[10px] font-semibold text-good">
+                    {r.type}
+                  </span>
+                </td>
+                <td className="py-2.5 pr-2 text-[13px] text-muted">{r.epoch}</td>
+                <td className="py-2.5 pr-2 text-right text-[13px] text-ink">{r.amount}</td>
+                <td className="py-2.5 pr-2 text-[12px] text-muted">{r.status}</td>
               </tr>
-            </thead>
-            <tbody>
-              {reqs.map((r) => {
+            ))}
+
+            {!showDemo &&
+              reqs.map((r) => {
                 const ready = !r.claimed && r.epoch < d.currentEpoch;
                 return (
-                  <tr key={r.id.toString()} className="border-b border-edge/40">
-                    <td className="py-2 pr-2 text-ink">#{r.id.toString()}</td>
-                    <td className="py-2 pr-2">
+                  <tr key={r.id.toString()} className="border-b border-edge/60 last:border-0">
+                    <td className="py-2.5 pr-2 text-[13px] text-ink">#{r.id.toString()}</td>
+                    <td className="py-2.5 pr-2">
                       <span
-                        className={`rounded px-1.5 py-0.5 text-[11px] ${
-                          r.requestType === 0 ? "bg-good/10 text-good" : "bg-accent/10 text-accent"
+                        className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${
+                          r.requestType === 0 ? "bg-goodbg text-good" : "bg-accent/10 text-accent"
                         }`}
                       >
                         {r.requestType === 0 ? "MINT" : "REDEEM"}
                       </span>
                     </td>
-                    <td className="py-2 pr-2 text-muted">{r.epoch.toString()}</td>
-                    <td className="py-2 pr-2 text-right text-ink">
+                    <td className="py-2.5 pr-2 text-[13px] text-muted">{r.epoch.toString()}</td>
+                    <td className="py-2.5 pr-2 text-right text-[13px] text-ink">
                       {r.requestType === 0 ? `${format6(r.amount)} USDC` : `${format6(r.amount)} tWSK`}
                     </td>
-                    <td className="py-2 pr-2">
+                    <td className="py-2.5 pr-2 text-[12px]">
                       {r.claimed ? (
-                        <span className="text-xs text-muted">{tr("claimed")}</span>
+                        <span className="text-muted">{tr("claimed")}</span>
                       ) : ready ? (
-                        <span className="text-xs text-yellow-300">{tr("pending")}</span>
+                        <span className="text-[#B98900]">{tr("pending")}</span>
                       ) : (
-                        <span className="text-xs text-muted">{tr("notFinalized")}</span>
+                        <span className="text-muted">{tr("notFinalized")}</span>
                       )}
                     </td>
                   </tr>
                 );
               })}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </Card>
+
+            {!showDemo && reqs.length === 0 && (
+              <tr>
+                <td colSpan={5} className="py-6 text-center text-[13px] text-muted">
+                  {tr("noRequests")}
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 }
