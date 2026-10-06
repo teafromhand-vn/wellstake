@@ -13,7 +13,7 @@ export function Card({
     <div className="rounded-xl border border-edge bg-panel p-4">
       {(title || right) && (
         <div className="mb-3 flex items-center justify-between">
-          {title && <h3 className="text-sm font-semibold text-gray-200">{title}</h3>}
+          {title && <h3 className="text-sm font-semibold text-gray-900">{title}</h3>}
           {right}
         </div>
       )}
@@ -39,7 +39,7 @@ export function Button({
 }) {
   const styles: Record<string, string> = {
     primary: "bg-accent text-ink hover:brightness-110",
-    ghost: "bg-panel2 text-gray-200 border border-edge hover:border-accent",
+    ghost: "bg-panel2 text-gray-900 border border-edge hover:border-accent",
     danger: "bg-bad/90 text-white hover:brightness-110",
   };
   return (
@@ -75,26 +75,32 @@ export function Field({
 }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-xs text-gray-400">{label}</span>
-      <div className="flex items-center gap-2 rounded-lg border border-edge bg-panel2 px-3 py-2">
+      <span className="mb-1 block text-xs text-gray-500">{label}</span>
+      <div
+        className={`flex items-center gap-2 rounded-lg border px-3 py-2 ${
+          disabled ? "border-edge bg-gray-100" : "border-edge bg-panel2"
+        }`}
+      >
         <input
-          className="w-full bg-transparent text-sm text-gray-100 outline-none"
+          className={`w-full bg-transparent text-sm outline-none ${
+            disabled ? "text-gray-500" : "text-gray-900"
+          }`}
           value={value}
           placeholder={placeholder}
           disabled={disabled}
           onChange={(e) => onChange(e.target.value)}
           inputMode="decimal"
         />
-        {onMax && (
+        {onMax && !disabled && (
           <button
             type="button"
             onClick={onMax}
-            className="rounded border border-edge px-1.5 py-0.5 text-[10px] text-gray-400 hover:border-accent"
+            className="rounded border border-edge px-1.5 py-0.5 text-[10px] text-gray-500 hover:border-accent"
           >
             {maxLabel ?? "MAX"}
           </button>
         )}
-        {suffix && <span className="text-xs text-gray-400">{suffix}</span>}
+        {suffix && <span className="text-xs text-gray-500">{suffix}</span>}
       </div>
     </label>
   );
@@ -103,17 +109,17 @@ export function Field({
 export function Row({ k, v }: { k: string; v: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between border-b border-edge/60 py-1.5 text-sm last:border-0">
-      <span className="text-gray-400">{k}</span>
-      <span className="font-medium text-gray-100">{v}</span>
+      <span className="text-gray-500">{k}</span>
+      <span className="font-medium text-gray-900">{v}</span>
     </div>
   );
 }
 
 export function Badge({ children, tone = "muted" }: { children: React.ReactNode; tone?: string }) {
   const tones: Record<string, string> = {
-    muted: "bg-panel2 text-gray-300 border-edge",
+    muted: "bg-panel2 text-gray-700 border-edge",
     good: "bg-good/10 text-good border-good/30",
-    warn: "bg-yellow-500/10 text-yellow-300 border-yellow-500/30",
+    warn: "bg-yellow-500/10 text-yellow-800 border-yellow-500/40",
     bad: "bg-bad/10 text-bad border-bad/30",
   };
   return (

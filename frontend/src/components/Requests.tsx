@@ -140,7 +140,7 @@ export function Requests() {
                 const ready = !r.claimed && r.epoch < d.currentEpoch;
                 return (
                   <tr key={r.id.toString()} className="border-b border-edge/40">
-                    <td className="py-2 pr-2 text-gray-300">#{r.id.toString()}</td>
+                    <td className="py-2 pr-2 text-gray-700">#{r.id.toString()}</td>
                     <td className="py-2 pr-2">
                       <span
                         className={`rounded px-1.5 py-0.5 text-[11px] ${
@@ -150,8 +150,8 @@ export function Requests() {
                         {r.requestType === 0 ? "MINT" : "REDEEM"}
                       </span>
                     </td>
-                    <td className="py-2 pr-2 text-gray-400">{r.epoch.toString()}</td>
-                    <td className="py-2 pr-2 text-right text-gray-200">
+                    <td className="py-2 pr-2 text-gray-500">{r.epoch.toString()}</td>
+                    <td className="py-2 pr-2 text-right text-gray-900">
                       {r.requestType === 0 ? `${format6(r.amount)} USDC` : `${format6(r.amount)} tWSK`}
                     </td>
                     <td className="py-2 pr-2">

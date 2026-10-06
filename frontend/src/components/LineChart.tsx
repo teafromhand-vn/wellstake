@@ -35,7 +35,7 @@ export function LineChart({
   if (data.length === 1) {
     return (
       <div
-        className="flex items-center justify-center rounded-lg border border-edge bg-panel2 text-xs text-gray-300"
+        className="flex items-center justify-center rounded-lg border border-edge bg-panel2 text-xs text-gray-700"
         style={{ height }}
       >
         {data[0].label}: {fmt(data[0].value)}
@@ -97,7 +97,7 @@ export function LineChart({
             cx={p[0]}
             cy={p[1]}
             r={i === active ? 3.2 : 2}
-            fill={i === active ? color : "#0f1522"}
+            fill={i === active ? color : "#ffffff"}
             stroke={color}
             strokeWidth="1.2"
           />
@@ -106,14 +106,14 @@ export function LineChart({
 
       {/* tooltip */}
       <div
-        className="pointer-events-none absolute -translate-x-1/2 rounded-md border border-edge bg-ink/95 px-2 py-1 text-[10px] text-gray-200 shadow-lg"
+        className="pointer-events-none absolute -translate-x-1/2 rounded-md border border-edge bg-ink/95 px-2 py-1 text-[10px] text-gray-900 shadow-lg"
         style={{
           left: `${(activeP[0] / width) * 100}%`,
           top: 0,
         }}
       >
-        <span className="text-gray-400">{data[active].label}</span>{" "}
-        <span className="font-semibold text-gray-100">{fmt(data[active].value)}</span>
+        <span className="text-gray-500">{data[active].label}</span>{" "}
+        <span className="font-semibold text-gray-900">{fmt(data[active].value)}</span>
       </div>
 
       {/* hit areas for hover (on top) */}

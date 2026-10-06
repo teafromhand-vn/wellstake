@@ -140,7 +140,7 @@ export function AdminPage() {
       )}
 
       {txHash && (
-        <div className="text-xs text-gray-400">
+        <div className="text-xs text-gray-500">
           {confirming ? tr("loading") : isSuccess ? tr("txSuccess") : tr("txSubmitted")}{" "}
           <a
             className="text-accent underline"

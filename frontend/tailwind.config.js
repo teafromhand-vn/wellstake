@@ -3,14 +3,18 @@ export default {
   content: ["./index.html", "./src/**/*.{ts,tsx}"],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ["Manrope", "ui-sans-serif", "system-ui", "sans-serif"],
+      },
       colors: {
-        ink: "#0b0f17",
-        panel: "#121826",
-        panel2: "#0f1522",
-        edge: "#1e293b",
-        accent: "#6ea8fe",
-        good: "#34d399",
-        bad: "#f87171",
+        // Light theme tokens
+        ink: "#f7f8fa", // page background
+        panel: "#ffffff", // card background
+        panel2: "#f1f3f7", // subtle inset / inputs
+        edge: "#e2e5ec", // borders
+        accent: "#2563eb", // primary blue
+        good: "#059669",
+        bad: "#dc2626",
       },
     },
   },

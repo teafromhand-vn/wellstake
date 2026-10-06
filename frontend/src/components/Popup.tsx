@@ -88,13 +88,13 @@ export function PopupProvider({ children }: { children: React.ReactNode }) {
                 <Icon tone={t.tone} />
               </div>
               <div className="min-w-0">
-                <div className="text-sm font-semibold text-gray-100">{t.title}</div>
+                <div className="text-sm font-semibold text-gray-900">{t.title}</div>
                 {t.description && (
-                  <div className="mt-0.5 break-words text-xs text-gray-400">{t.description}</div>
+                  <div className="mt-0.5 break-words text-xs text-gray-500">{t.description}</div>
                 )}
               </div>
               <button
-                className="ml-auto shrink-0 text-gray-500 hover:text-gray-300"
+                className="ml-auto shrink-0 text-gray-500 hover:text-gray-700"
                 onClick={() => setItems((prev) => prev.filter((x) => x.id !== t.id))}
                 aria-label="close"
               >

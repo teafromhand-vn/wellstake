@@ -28,8 +28,8 @@ function Stat({
   return (
     <div className="rounded-xl border border-edge bg-panel2 p-4">
       <div className="text-xs uppercase tracking-wide text-gray-500">{label}</div>
-      <div className={`mt-1 font-semibold text-gray-100 ${big ? "text-3xl" : "text-xl"}`}>{value}</div>
-      {sub && <div className="mt-0.5 text-xs text-gray-400">{sub}</div>}
+      <div className={`mt-1 font-semibold text-gray-900 ${big ? "text-3xl" : "text-xl"}`}>{value}</div>
+      {sub && <div className="mt-0.5 text-xs text-gray-500">{sub}</div>}
     </div>
   );
 }
@@ -48,7 +48,7 @@ export function Info() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-sm font-semibold text-gray-300">{tr("overview")}</h1>
+        <h1 className="text-sm font-semibold text-gray-700">{tr("overview")}</h1>
         {d.woundDown ? <Badge tone="bad">{tr("woundDown")}</Badge> : <Badge tone="good">Active</Badge>}
       </div>
 
@@ -56,8 +56,8 @@ export function Info() {
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="rounded-xl border border-edge bg-panel2 p-4">
           <div className="text-xs uppercase tracking-wide text-gray-500">{tr("activeEpoch")}</div>
-          <div className="mt-1 text-4xl font-bold text-gray-100">#{d.currentEpoch.toString()}</div>
-          <div className="mt-0.5 text-xs text-gray-400">
+          <div className="mt-1 text-4xl font-bold text-gray-900">#{d.currentEpoch.toString()}</div>
+          <div className="mt-0.5 text-xs text-gray-500">
             {start.time} · {start.date}
           </div>
         </div>

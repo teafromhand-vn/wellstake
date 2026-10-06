@@ -36,6 +36,13 @@ export function MintRedeem({ mode, onDone }: { mode: Mode; onDone: () => void })
   const needsApproval = allowance !== undefined && value > 0n && allowance < value;
   const onArc = chainId === arcTestnet.id;
 
+  // Derived read-only values (mirror the contract math, rounded down).
+  const feeValue = mode === "redeem" ? (value * 50n) / 10000n : 0n;
+  const netValue = mode === "redeem" ? value - feeValue : 0n;
+  // Mint: estimated tWSK out = floor(usdcIn * 1e6 / rate)
+  const rate = d.rate ?? 0n;
+  const receiveValue = mode === "mint" && rate > 0n ? (value * 1_000_000n) / rate : 0n;
+
   useEffect(() => {
     if (isSuccess && txHash) {
       d.refetch();
@@ -90,7 +97,7 @@ export function MintRedeem({ mode, onDone }: { mode: Mode; onDone: () => void })
 
   return (
     <Card title={mode === "mint" ? tr("mint") : tr("redeem")}>
-      <p className="mb-3 text-xs text-gray-400">
+      <p className="mb-3 text-xs text-gray-500">
         {mode === "mint" ? tr("mintDesc") : tr("redeemDesc")}
       </p>
 
@@ -109,11 +116,38 @@ export function MintRedeem({ mode, onDone }: { mode: Mode; onDone: () => void })
         {tr("balance")}: {format6(balance)} {mode === "mint" ? "USDC" : "tWSK"}
       </div>
 
+      <div className="mt-3 grid grid-cols-2 gap-3">
+        <Field
+          label={tr("fee")}
+          value={value > 0n ? format6(feeValue, 6) : "0"}
+          onChange={() => {}}
+          suffix="tWSK"
+          disabled
+        />
+        {mode === "redeem" ? (
+          <Field
+            label={tr("burnAmount")}
+            value={value > 0n ? format6(netValue, 6) : "0"}
+            onChange={() => {}}
+            suffix="tWSK"
+            disabled
+          />
+        ) : (
+          <Field
+            label={tr("receiveEstimate")}
+            value={value > 0n ? format6(receiveValue, 6) : "0"}
+            onChange={() => {}}
+            suffix="tWSK"
+            disabled
+          />
+        )}
+      </div>
+
       <div className="mt-3 flex items-center gap-2">
         <Button onClick={run} disabled={isPending || confirming || !address}>
           {needsApproval ? tr("approveFirst") : mode === "mint" ? tr("requestMint") : tr("requestRedeem")}
         </Button>
-        {(isPending || confirming) && <span className="text-xs text-gray-400">{status ?? tr("loading")}</span>}
+        {(isPending || confirming) && <span className="text-xs text-gray-500">{status ?? tr("loading")}</span>}
       </div>
 
       <p className="mt-3 text-[11px] text-gray-500">{tr("claimNotReady")}</p>

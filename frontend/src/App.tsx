@@ -14,7 +14,7 @@ export default function App() {
     <div className="min-h-screen">
       <TopBar />
       <main className="mx-auto max-w-5xl px-4 py-6">
-        <div className="mb-4 flex items-center justify-between rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-3 py-2 text-xs text-yellow-200">
+        <div className="mb-4 flex items-center justify-between rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-3 py-2 text-xs text-yellow-800">
           <span>{tr("beta")}</span>
           <a
             className="text-accent underline"
@@ -36,7 +36,7 @@ export default function App() {
           <Route path="*" element={<Navigate to="/info" replace />} />
         </Routes>
 
-        <footer className="mt-8 border-t border-edge pt-4 text-center text-xs text-gray-600">
+        <footer className="mt-8 border-t border-edge pt-4 text-center text-xs text-gray-500">
           Wellstake V1 beta · Arc Testnet ({5042002}) ·{" "}
           <a
             className="underline"

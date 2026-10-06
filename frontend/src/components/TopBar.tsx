@@ -28,7 +28,7 @@ export function TopBar() {
         {/* Left: brand */}
         <NavLink to="/info" className="flex shrink-0 items-center gap-2">
           <div className="h-6 w-6 rounded-md bg-gradient-to-br from-accent to-good" />
-          <span className="hidden text-sm font-semibold text-gray-100 sm:inline">
+          <span className="hidden text-sm font-semibold text-gray-900 sm:inline">
             Wellstake <span className="text-gray-500">beta</span>
           </span>
         </NavLink>
@@ -41,7 +41,7 @@ export function TopBar() {
               to={n.to}
               className={({ isActive }) =>
                 `rounded-md px-2.5 py-1.5 text-xs font-medium transition ${
-                  isActive ? "bg-accent text-ink" : "text-gray-300 hover:text-white"
+                  isActive ? "bg-accent text-ink" : "text-gray-700 hover:text-gray-900"
                 }`
               }
             >
@@ -54,13 +54,13 @@ export function TopBar() {
         <div className="flex shrink-0 items-center gap-2">
           <div className="flex overflow-hidden rounded-lg border border-edge text-xs">
             <button
-              className={`px-2 py-1 ${lang === "en" ? "bg-accent text-ink" : "text-gray-400"}`}
+              className={`px-2 py-1 ${lang === "en" ? "bg-accent text-ink" : "text-gray-500"}`}
               onClick={() => setLang("en")}
             >
               EN
             </button>
             <button
-              className={`px-2 py-1 ${lang === "vi" ? "bg-accent text-ink" : "text-gray-400"}`}
+              className={`px-2 py-1 ${lang === "vi" ? "bg-accent text-ink" : "text-gray-500"}`}
               onClick={() => setLang("vi")}
             >
               VI
@@ -75,7 +75,7 @@ export function TopBar() {
 
           {isConnected ? (
             <div className="flex items-center gap-2">
-              <span className="hidden rounded-lg border border-edge bg-panel2 px-2 py-1 text-xs text-gray-300 sm:inline">
+              <span className="hidden rounded-lg border border-edge bg-panel2 px-2 py-1 text-xs text-gray-700 sm:inline">
                 {shortAddr(address)}
               </span>
               <Button variant="ghost" onClick={() => disconnect()}>
