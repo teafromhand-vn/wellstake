@@ -118,19 +118,15 @@ export function MintModule({ mode }: { mode: Mode }) {
         <div className="flex items-start justify-between">
           <div>
             <div className="text-[11px] font-medium uppercase tracking-wide text-white/50">
-              {mode === "mint" ? "tWSK balance" : "USDC available"}
+              tWSK balance
             </div>
-            <div className="mt-1 text-[22px] font-bold leading-none">
-              {mode === "mint" ? tWskBal : usdcAvail}
-            </div>
+            <div className="mt-1 text-[22px] font-bold leading-none">{tWskBal}</div>
           </div>
           <div className="text-right">
             <div className="text-[11px] font-medium uppercase tracking-wide text-white/50">
-              {mode === "mint" ? "USDC available" : "tWSK balance"}
+              USDC available
             </div>
-            <div className="mt-1 text-[22px] font-bold leading-none">
-              {mode === "mint" ? usdcAvail : tWskBal}
-            </div>
+            <div className="mt-1 text-[22px] font-bold leading-none">{usdcAvail}</div>
           </div>
         </div>
       </div>
