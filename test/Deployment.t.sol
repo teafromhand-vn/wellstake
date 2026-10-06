@@ -48,13 +48,13 @@ contract DeploymentTest is WellstakeTestBase {
 
     function test_revertsOnZeroConfig() public {
         vm.expectRevert(LiquidWallet.ZeroAddress.selector);
-        new LiquidWallet(address(0), manager, vaultWallet);
+        new LiquidWallet(address(0), manager, vaultWallet, "W", "W");
 
         vm.expectRevert(LiquidWallet.ZeroAddress.selector);
-        new LiquidWallet(address(usdc), address(0), vaultWallet);
+        new LiquidWallet(address(usdc), address(0), vaultWallet, "W", "W");
 
         vm.expectRevert(LiquidWallet.ZeroAddress.selector);
-        new LiquidWallet(address(usdc), manager, address(0));
+        new LiquidWallet(address(usdc), manager, address(0), "W", "W");
 
         vm.expectRevert(WellstakeVault.ZeroAddress.selector);
         new WellstakeVault(address(0), address(liquid), vaultWallet);

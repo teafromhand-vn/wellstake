@@ -90,7 +90,13 @@ contract LiquidWallet is ReentrancyGuard {
         _;
     }
 
-    constructor(address usdc_, address manager_, address vaultWallet_) {
+    constructor(
+        address usdc_,
+        address manager_,
+        address vaultWallet_,
+        string memory tokenName_,
+        string memory tokenSymbol_
+    ) {
         if (usdc_ == address(0) || manager_ == address(0) || vaultWallet_ == address(0)) {
             revert ZeroAddress();
         }
@@ -99,7 +105,7 @@ contract LiquidWallet is ReentrancyGuard {
         manager = manager_;
         vaultWallet = vaultWallet_;
 
-        wsk = new WellstakeToken(address(this));
+        wsk = new WellstakeToken(address(this), tokenName_, tokenSymbol_);
         pendingNFT = new PendingRequestNFT(address(this));
 
         totalNav = INITIAL_NAV;

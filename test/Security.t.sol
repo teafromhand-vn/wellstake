@@ -59,7 +59,7 @@ contract SecurityTest is WellstakeTestBase {
 
     function test_reentrancyOnMint() public {
         ReentrantUSDC reUsdc = new ReentrantUSDC();
-        LiquidWallet reLiquid = new LiquidWallet(address(reUsdc), manager, vaultWallet);
+        LiquidWallet reLiquid = new LiquidWallet(address(reUsdc), manager, vaultWallet, "W", "W");
 
         reUsdc.mint(alice, 100 * ONE);
         vm.prank(alice);

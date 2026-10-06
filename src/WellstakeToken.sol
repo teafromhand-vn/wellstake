@@ -19,7 +19,9 @@ contract WellstakeToken is ERC20 {
         _;
     }
 
-    constructor(address authority_) ERC20("Wellstake", "WSK") {
+    constructor(address authority_, string memory name_, string memory symbol_)
+        ERC20(name_, symbol_)
+    {
         if (authority_ == address(0)) revert ZeroAddress();
         authority = authority_;
     }

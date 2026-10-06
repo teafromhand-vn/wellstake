@@ -22,16 +22,19 @@ contract Deploy is Script {
         address usdc = vm.envAddress("USDC");
         address manager = vm.envAddress("MANAGER");
         address vaultWallet = vm.envAddress("VAULT_WALLET");
+        string memory tokenName = vm.envOr("TOKEN_NAME", string("Wellstake"));
+        string memory tokenSymbol = vm.envOr("TOKEN_SYMBOL", string("WSK"));
 
         vm.startBroadcast(deployerKey);
-        liquid = new LiquidWallet(usdc, manager, vaultWallet);
+        liquid = new LiquidWallet(usdc, manager, vaultWallet, tokenName, tokenSymbol);
         vault = new WellstakeVault(usdc, address(liquid), vaultWallet);
         vm.stopBroadcast();
 
-        // Link the Vault on the LiquidWallet. Requires the manager to submit this call.
-        if (msg.sender == manager) {
-            liquid.setVault(address(vault));
-        }
+        // Link the Vault on the LiquidWallet. Requires manager authority.
+        uint256 managerKey = vm.envOr("MANAGER_PRIVATE_KEY", deployerKey);
+        vm.startBroadcast(managerKey);
+        liquid.setVault(address(vault));
+        vm.stopBroadcast();
 
         _validate(liquid, vault, usdc, manager, vaultWallet);
         _log(liquid, vault);

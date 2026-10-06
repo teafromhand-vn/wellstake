@@ -29,7 +29,7 @@ abstract contract WellstakeTestBase is Test {
 
     function setUp() public virtual {
         usdc = new MockUSDC();
-        liquid = new LiquidWallet(address(usdc), manager, vaultWallet);
+        liquid = new LiquidWallet(address(usdc), manager, vaultWallet, "Wellstake", "WSK");
         vault = new WellstakeVault(address(usdc), address(liquid), vaultWallet);
         vm.prank(manager);
         liquid.setVault(address(vault));
