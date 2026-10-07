@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
-import { useAccount, useWriteContract, useWaitForTransactionReceipt, useChainId } from "wagmi";
+import {
+  useAccount,
+  useWriteContract,
+  useWaitForTransactionReceipt,
+  useChainId,
+  useSwitchChain,
+} from "wagmi";
 import { useI18n } from "../i18n-react";
 import { usePopup } from "./Popup";
 import { erc20Abi, liquidWalletAbi } from "../abi";
@@ -26,6 +32,7 @@ export function MintModule({ mode }: { mode: Mode }) {
   const { tr } = useI18n();
   const { isConnected } = useAccount();
   const chainId = useChainId();
+  const { switchChain, isPending: switching } = useSwitchChain();
   const d = useVaultData();
   const { notify } = usePopup();
   const [amount, setAmount] = useState("");
@@ -146,6 +153,19 @@ export function MintModule({ mode }: { mode: Mode }) {
         <p className="mt-1 text-[12px] text-muted">
           {mode === "mint" ? tr("mintDesc") : tr("redeemDesc")}
         </p>
+
+        {isConnected && !onArc && (
+          <div className="mt-3 flex items-center justify-between rounded-lg border border-warnborder bg-warnbg px-3 py-2 text-[12px] text-warntext">
+            <span>{tr("wrongNetwork")}</span>
+            <button
+              disabled={switching}
+              onClick={() => switchChain({ chainId: opMainnet.id })}
+              className="rounded-md bg-accent px-2.5 py-1 text-[12px] font-semibold text-white transition hover:brightness-105 disabled:opacity-50"
+            >
+              {tr("switchNetwork")}
+            </button>
+          </div>
+        )}
 
         {/* Amount */}
         <div className="mt-4">
