@@ -107,7 +107,8 @@ export function Requests() {
     }
   }
 
-  const showDemo = DEMO && (!address || reqs.length === 0);
+  // Show demo rows only when no wallet is connected (never for a connected user with no requests).
+  const showDemo = DEMO && !address;
   const demoRows = showDemo ? MOCK_REQUESTS : [];
 
   return (
