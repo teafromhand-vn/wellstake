@@ -5,6 +5,7 @@ import { Info } from "./pages/Info";
 import { Mint } from "./pages/Mint";
 import { Burn } from "./pages/Burn";
 import { AdminPage } from "./pages/AdminPage";
+import { VaultAdminPage } from "./pages/VaultAdminPage";
 
 export default function App() {
   return (
@@ -19,6 +20,7 @@ export default function App() {
           <Route path="/redeem" element={<Navigate to="/burn" replace />} />
           <Route path="/docs" element={<Navigate to="/info" replace />} />
           <Route path="/admin" element={<AdminPage />} />
+          <Route path="/vault-admin" element={<VaultAdminPage />} />
           <Route path="*" element={<Navigate to="/info" replace />} />
         </Routes>
       </main>

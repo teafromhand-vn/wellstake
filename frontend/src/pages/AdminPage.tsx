@@ -4,7 +4,6 @@ import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagm
 import { useI18n } from "../i18n-react";
 import { Button, Card, Field, Row } from "../components/Ui";
 import { Holdings } from "../components/Holdings";
-import { VaultPanel } from "../components/VaultPanel";
 import { usePopup } from "../components/Popup";
 import { liquidWalletAbi } from "../abi";
 import { CONTRACTS, EXPLORER, ZERO_ADDRESS } from "../config";
@@ -73,10 +72,15 @@ export function AdminPage() {
 
   return (
     <div className="space-y-4">
-      <div className="text-xs text-muted">
+      <div className="flex items-center justify-between text-xs text-muted">
         <Link className="text-accent underline" to="/">
           ← {tr("appTitle")}
         </Link>
+        {isManager && (
+          <Link className="text-accent underline" to="/vault-admin">
+            {tr("vaultPanel")} →
+          </Link>
+        )}
       </div>
 
       <Card title={tr("admin")}>
@@ -98,8 +102,6 @@ export function AdminPage() {
       </Card>
 
       {isManager && <Holdings />}
-
-      {isManager && <VaultPanel />}
 
       {isManager && (
         <>
