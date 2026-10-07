@@ -78,17 +78,35 @@ export function Footer() {
         <div className="hidden sm:block" />
 
         {/* Right: add network + token */}
-        <div className="flex flex-col items-start gap-2 sm:items-end">
+        <div className="flex flex-col items-start gap-2.5 sm:items-end">
+          {/* OPScan-style "Add OP Mainnet" button: black pill, Optimism mark + label */}
           <button
             onClick={addOptimism}
-            className="rounded-lg border border-edge bg-inset px-3 py-1.5 text-[12px] font-semibold text-ink transition hover:bg-[#ECEEF2]"
+            className="flex items-center gap-2 rounded-full bg-black px-3.5 py-1.5 text-[12px] font-semibold text-white transition hover:opacity-90"
           >
+            <svg width="16" height="16" viewBox="0 0 32 32" aria-hidden="true">
+              <circle cx="16" cy="16" r="16" fill="#FF0420" />
+              <text
+                x="16"
+                y="21"
+                textAnchor="middle"
+                fontFamily="Manrope, sans-serif"
+                fontSize="12"
+                fontWeight="800"
+                fill="#fff"
+              >
+                OP
+              </text>
+            </svg>
             {tr("addOptimism")}
           </button>
+
+          {/* "Add wskBV": square logo + label */}
           <button
             onClick={addToken}
-            className="rounded-lg border border-edge bg-inset px-3 py-1.5 text-[12px] font-semibold text-ink transition hover:bg-[#ECEEF2]"
+            className="flex items-center gap-2 rounded-full border border-edge bg-inset px-3 py-1.5 text-[12px] font-semibold text-ink transition hover:bg-[#ECEEF2]"
           >
+            <img src="/logo.png" alt="" className="h-4 w-4 rounded-sm" />
             {tr("addToken")} {SHARE.symbol}
           </button>
         </div>

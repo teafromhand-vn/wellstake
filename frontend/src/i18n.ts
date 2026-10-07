@@ -13,7 +13,7 @@ export const t: Dict = {
   wrongNetwork: { en: "Wrong network", vi: "Sai mạng" },
   switchNetwork: { en: "Switch to OP Mainnet", vi: "Chuyển sang OP Mainnet" },
   addNetwork: { en: "Add OP Mainnet", vi: "Thêm OP Mainnet" },
-  addOptimism: { en: "Add Optimism", vi: "Thêm Optimism" },
+  addOptimism: { en: "Add OP Mainnet", vi: "Thêm OP Mainnet" },
   addToken: { en: "Add", vi: "Thêm" },
   account: { en: "Account", vi: "Tài khoản" },
 
