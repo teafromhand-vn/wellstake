@@ -7,7 +7,7 @@ import { SHARE, EXPLORER } from "../config";
 function Cell({ value, symbol }: { value?: bigint; symbol: string }) {
   return (
     <span className="tabular-nums text-ink">
-      {value !== undefined ? `${format6(value)} ` : "- "}
+      {value !== undefined ? `${format6(value, 6)} ` : "- "}
       <span className="text-subtle">{symbol}</span>
     </span>
   );

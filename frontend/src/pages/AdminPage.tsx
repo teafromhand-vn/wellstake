@@ -3,10 +3,11 @@ import { Link } from "react-router-dom";
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { useI18n } from "../i18n-react";
 import { Button, Card, Field, Row } from "../components/Ui";
+import { Holdings } from "../components/Holdings";
 import { usePopup } from "../components/Popup";
 import { liquidWalletAbi } from "../abi";
 import { CONTRACTS, EXPLORER, ZERO_ADDRESS } from "../config";
-import { errMessage, shortAddr } from "../lib";
+import { errMessage, format6, shortAddr } from "../lib";
 import { useVaultData } from "../useVault";
 import { useNoindex } from "../useNoindex";
 
@@ -88,12 +89,14 @@ export function AdminPage() {
               v={d.liquidVault && d.liquidVault !== ZERO_ADDRESS ? shortAddr(d.liquidVault) : "-"}
             />
             <Row k={tr("activeEpoch")} v={d.currentEpoch.toString()} />
-            <Row k={tr("nav")} v={`${d.totalNav ? Number(d.totalNav) / 1e6 : 0} USDC`} />
-            <Row k={tr("rate")} v={d.rate ? (Number(d.rate) / 1e6).toString() : "-"} />
+            <Row k={tr("nav")} v={`${format6(d.totalNav, 6)} USDC`} />
+            <Row k={tr("rate")} v={`${format6(d.rate, 6)} USDC`} />
             <Row k={tr("woundDown")} v={d.woundDown ? "yes" : "no"} />
           </div>
         )}
       </Card>
+
+      <Holdings />
 
       {isManager && (
         <>

@@ -1,6 +1,5 @@
 import { useI18n } from "../i18n-react";
 import { LineChart } from "../components/LineChart";
-import { Holdings } from "../components/Holdings";
 import { CONTRACTS, EXPLORER, SHARE } from "../config";
 import { useVaultData } from "../useVault";
 import { useHistory } from "../useHistory";
@@ -90,9 +89,6 @@ export function Info() {
         <StatCard label={tr("statTotalSupply")} value={supply} />
         <StatCard label={tr("statTokenPrice")} value={price} sub={`USDC / ${SHARE.symbol}`} />
       </div>
-
-      {/* Wallet holdings */}
-      <Holdings />
 
       {/* 4. Charts 2x2 */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
