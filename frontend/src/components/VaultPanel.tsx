@@ -83,6 +83,26 @@ export function VaultPanel() {
     }
   }
 
+  async function invest() {
+    try {
+      const v = parse6(amount);
+      if (v <= 0n) throw new Error("Amount must be > 0");
+      setStep(tr("investing"));
+      const hash = await writeContractAsync({
+        abi: vaultAbi,
+        address: CONTRACTS.vault,
+        functionName: "invest",
+        args: [v],
+      });
+      setTxHash(hash);
+      notify("info", tr("notifySubmittedTitle"), tr("notifySubmittedDesc"));
+    } catch (e) {
+      notify("error", tr("notifyErrorTitle"), errMessage(e));
+    } finally {
+      setStep(null);
+    }
+  }
+
   return (
     <Card title={tr("vaultPanel")}>
       {!isVaultWallet ? (
@@ -117,6 +137,13 @@ export function VaultPanel() {
               className="rounded-lg border border-edge bg-inset px-3 py-2 text-[12px] font-semibold text-ink transition hover:bg-[#ECEEF2] disabled:opacity-40"
             >
               {tr("returnFunds")}
+            </button>
+            <button
+              disabled={busy}
+              onClick={invest}
+              className="rounded-lg border border-edge bg-inset px-3 py-2 text-[12px] font-semibold text-ink transition hover:bg-[#ECEEF2] disabled:opacity-40"
+            >
+              {tr("invest")}
             </button>
             {busy && <span className="text-xs text-muted">{step ?? tr("loading")}</span>}
           </div>
