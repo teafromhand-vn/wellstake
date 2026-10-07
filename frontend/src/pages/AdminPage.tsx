@@ -4,6 +4,7 @@ import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagm
 import { useI18n } from "../i18n-react";
 import { Button, Card, Field, Row } from "../components/Ui";
 import { Holdings } from "../components/Holdings";
+import { VaultPanel } from "../components/VaultPanel";
 import { usePopup } from "../components/Popup";
 import { liquidWalletAbi } from "../abi";
 import { CONTRACTS, EXPLORER, ZERO_ADDRESS } from "../config";
@@ -97,6 +98,8 @@ export function AdminPage() {
       </Card>
 
       {isManager && <Holdings />}
+
+      {isManager && <VaultPanel />}
 
       {isManager && (
         <>
