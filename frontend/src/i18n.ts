@@ -112,6 +112,7 @@ export const t: Dict = {
   statTokenPrice: { en: "wskBV price", vi: "Giá wskBV" },
   holdings: { en: "Wallet holdings", vi: "Tài sản các ví" },
   liquidWalletLabel: { en: "LiquidWallet", vi: "LiquidWallet" },
+  managerLabel: { en: "Manager", vi: "Manager" },
   vaultLabel: { en: "Vault", vi: "Vault" },
   operatorLabel: { en: "Vault wallet", vi: "Ví vault" },
   usdcLabel: { en: "USDC", vi: "USDC" },

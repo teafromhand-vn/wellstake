@@ -1,6 +1,5 @@
 import { useI18n } from "../i18n-react";
 import { useHoldings } from "../useHoldings";
-import { useVaultData } from "../useVault";
 import { format6, shortAddr } from "../lib";
 import { SHARE, EXPLORER } from "../config";
 
@@ -16,30 +15,11 @@ function Cell({ value, symbol }: { value?: bigint; symbol: string }) {
 export function Holdings() {
   const { tr } = useI18n();
   const h = useHoldings();
-  const d = useVaultData();
 
   const rows = [
-    {
-      key: "liquid",
-      label: tr("liquidWalletLabel"),
-      addr: h.liquidAddr,
-      usdc: h.usdc.liquid ?? d.liquidUsdc,
-      wsk: h.wsk.liquid,
-    },
-    {
-      key: "vault",
-      label: tr("vaultLabel"),
-      addr: h.vaultAddr,
-      usdc: h.usdc.vault,
-      wsk: h.wsk.vault,
-    },
-    {
-      key: "operator",
-      label: tr("operatorLabel"),
-      addr: h.vaultWallet,
-      usdc: h.usdc.operator,
-      wsk: h.wsk.operator,
-    },
+    { key: "manager", label: tr("managerLabel"), addr: h.manager, usdc: h.usdc.manager, wsk: h.wsk.manager },
+    { key: "liquid", label: tr("liquidWalletLabel"), addr: h.liquidAddr, usdc: h.usdc.liquid, wsk: h.wsk.liquid },
+    { key: "vault", label: tr("vaultLabel"), addr: h.vaultAddr, usdc: h.usdc.vault, wsk: h.wsk.vault },
   ];
 
   return (
