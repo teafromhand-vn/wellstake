@@ -96,7 +96,7 @@ export function AdminPage() {
         )}
       </Card>
 
-      <Holdings />
+      {isManager && <Holdings />}
 
       {isManager && (
         <>
