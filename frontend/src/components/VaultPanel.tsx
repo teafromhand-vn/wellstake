@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
+import { useAccount, useConfig, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
+import { waitForTransactionReceipt } from "wagmi/actions";
 import { useI18n } from "../i18n-react";
 import { Card, Field, Row } from "./Ui";
 import { usePopup } from "./Popup";
@@ -11,9 +12,11 @@ import { useHoldings } from "../useHoldings";
 export function VaultPanel() {
   const { tr } = useI18n();
   const { address } = useAccount();
+  const config = useConfig();
   const h = useHoldings();
   const { notify } = usePopup();
   const [amount, setAmount] = useState("");
+  const [step, setStep] = useState<string | null>(null);
 
   const { writeContractAsync, isPending } = useWriteContract();
   const [txHash, setTxHash] = useState<`0x${string}` | undefined>();
@@ -30,14 +33,47 @@ export function VaultPanel() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSuccess, txHash]);
 
-  async function call(fn: "pull" | "returnFunds" | "invest") {
+  const busy = isPending || confirming;
+
+  // Pull from LiquidWallet into the Vault, then forward it to the vaultWallet EOA (2 txs).
+  async function pullAndInvest() {
+    try {
+      const v = parse6(amount);
+      if (v <= 0n) throw new Error("Amount must be > 0");
+
+      setStep(tr("pulling"));
+      const pullHash = await writeContractAsync({
+        abi: vaultAbi,
+        address: CONTRACTS.vault,
+        functionName: "pull",
+        args: [v],
+      });
+      await waitForTransactionReceipt(config, { hash: pullHash });
+
+      setStep(tr("investing"));
+      const investHash = await writeContractAsync({
+        abi: vaultAbi,
+        address: CONTRACTS.vault,
+        functionName: "invest",
+        args: [v],
+      });
+      setTxHash(investHash);
+      notify("info", tr("notifySubmittedTitle"), tr("notifySubmittedDesc"));
+    } catch (e) {
+      notify("error", tr("notifyErrorTitle"), errMessage(e));
+    } finally {
+      setStep(null);
+    }
+  }
+
+  async function returnFunds() {
     try {
       const v = parse6(amount);
       if (v <= 0n) throw new Error("Amount must be > 0");
       const hash = await writeContractAsync({
         abi: vaultAbi,
         address: CONTRACTS.vault,
-        functionName: fn,
+        functionName: "returnFunds",
         args: [v],
       });
       setTxHash(hash);
@@ -67,28 +103,22 @@ export function VaultPanel() {
             maxLabel={tr("max")}
           />
 
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
-              disabled={isPending || confirming}
-              onClick={() => call("pull")}
+              disabled={busy}
+              onClick={pullAndInvest}
               className="rounded-lg bg-accent px-3 py-2 text-[12px] font-semibold text-white transition hover:brightness-105 disabled:opacity-40"
             >
-              {tr("pull")}
+              {tr("pullInvest")}
             </button>
             <button
-              disabled={isPending || confirming}
-              onClick={() => call("returnFunds")}
+              disabled={busy}
+              onClick={returnFunds}
               className="rounded-lg border border-edge bg-inset px-3 py-2 text-[12px] font-semibold text-ink transition hover:bg-[#ECEEF2] disabled:opacity-40"
             >
               {tr("returnFunds")}
             </button>
-            <button
-              disabled={isPending || confirming}
-              onClick={() => call("invest")}
-              className="rounded-lg border border-edge bg-inset px-3 py-2 text-[12px] font-semibold text-ink transition hover:bg-[#ECEEF2] disabled:opacity-40"
-            >
-              {tr("invest")}
-            </button>
+            {busy && <span className="text-xs text-muted">{step ?? tr("loading")}</span>}
           </div>
 
           {txHash && (
