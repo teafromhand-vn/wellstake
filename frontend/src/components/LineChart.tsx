@@ -23,6 +23,28 @@ export function LineChart({
 
   const fmt = (n: number) => (format ? format(n) : n.toFixed(2));
 
+  if (data.length === 0) {
+    return (
+      <div
+        className="flex items-center justify-center rounded-lg border border-edge bg-inset text-xs text-subtle"
+        style={{ height }}
+      >
+        —
+      </div>
+    );
+  }
+
+  if (data.length === 1) {
+    return (
+      <div
+        className="flex items-center justify-center rounded-lg border border-edge bg-inset text-xs text-muted"
+        style={{ height }}
+      >
+        {data[0].label}: {fmt(data[0].value)}
+      </div>
+    );
+  }
+
   const values = data.map((d) => d.value);
   const min = Math.min(...values);
   const max = Math.max(...values);

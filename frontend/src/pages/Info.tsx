@@ -1,7 +1,10 @@
 import { useI18n } from "../i18n-react";
 import { LineChart } from "../components/LineChart";
-import { MOCK } from "../mock";
 import { CONTRACTS, EXPLORER, SHARE } from "../config";
+import { useVaultData } from "../useVault";
+import { useHistory } from "../useHistory";
+import { useEpochStart } from "../useEpochStart";
+import { format6 } from "../lib";
 
 function StatCard({
   label,
@@ -21,17 +24,35 @@ function StatCard({
   );
 }
 
+function fmtUTC(ts: bigint | null): string {
+  if (!ts) return "-";
+  const d = new Date(Number(ts) * 1000);
+  const time = d.toLocaleTimeString("en-GB", {
+    timeZone: "UTC",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  const date = d.toLocaleDateString("en-GB", {
+    timeZone: "UTC",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+  return `${time} UTC · ${date}`;
+}
+
 export function Info() {
   const { tr } = useI18n();
+  const d = useVaultData();
+  const epochStart = useEpochStart(d.currentEpoch);
+  const { points } = useHistory();
 
-  const pricePoints = MOCK.priceHistory.map((p) => ({
-    label: `Epoch ${p.epoch}`,
-    value: p.price,
-  }));
-  const supplyPoints = MOCK.priceHistory.map((p) => ({
-    label: `Epoch ${p.epoch}`,
-    value: p.supply,
-  }));
+  const pricePoints = points.map((p) => ({ label: `Epoch ${p.epoch}`, value: p.rate }));
+  const supplyPoints = points.map((p) => ({ label: `Epoch ${p.epoch}`, value: p.supply }));
+
+  const nav = d.totalNav !== undefined ? `${format6(d.totalNav)} USDC` : "-";
+  const supply = d.totalSupply !== undefined ? `${format6(d.totalSupply)} ${SHARE.symbol}` : "-";
+  const price = d.rate !== undefined ? `${format6(d.rate, 6)} USDC` : "-";
 
   return (
     <div className="space-y-4">
@@ -53,16 +74,20 @@ export function Info() {
         <h2 className="text-[13px] font-semibold text-ink">{tr("overview")}</h2>
         <span className="inline-flex items-center gap-1.5 rounded-full border border-[#CDEEDD] bg-goodbg px-2.5 py-0.5 text-[11px] font-medium text-good">
           <span className="h-1.5 w-1.5 rounded-full bg-good" />
-          Active
+          {d.woundDown ? tr("woundDown") : "Active"}
         </span>
       </div>
 
       {/* 3. Statistic cards 2x2 */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <StatCard label={tr("statActiveEpoch")} value={`#${MOCK.activeEpoch}`} sub={MOCK.epochStart} />
-        <StatCard label={tr("statFundNav")} value={MOCK.fundNav} />
-        <StatCard label={tr("statTotalSupply")} value={MOCK.totalSupply} />
-        <StatCard label={tr("statTokenPrice")} value={MOCK.wskBVPrice} sub={MOCK.priceUnit} />
+        <StatCard
+          label={tr("statActiveEpoch")}
+          value={`#${d.currentEpoch.toString()}`}
+          sub={fmtUTC(epochStart)}
+        />
+        <StatCard label={tr("statFundNav")} value={nav} />
+        <StatCard label={tr("statTotalSupply")} value={supply} />
+        <StatCard label={tr("statTokenPrice")} value={price} sub={`USDC / ${SHARE.symbol}`} />
       </div>
 
       {/* 4. Charts 2x2 */}
