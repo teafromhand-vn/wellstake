@@ -13,6 +13,8 @@ export const t: Dict = {
   wrongNetwork: { en: "Wrong network", vi: "Sai mạng" },
   switchNetwork: { en: "Switch to OP Mainnet", vi: "Chuyển sang OP Mainnet" },
   addNetwork: { en: "Add OP Mainnet", vi: "Thêm OP Mainnet" },
+  addOptimism: { en: "Add Optimism", vi: "Thêm Optimism" },
+  addToken: { en: "Add", vi: "Thêm" },
   account: { en: "Account", vi: "Tài khoản" },
 
   overview: { en: "Overview", vi: "Tổng quan" },
@@ -93,8 +95,8 @@ export const t: Dict = {
   error: { en: "Error", vi: "Lỗi" },
   close: { en: "Close", vi: "Đóng" },
   beta: {
-    en: "Beta build on OP Mainnet. Funds are test-only.",
-    vi: "Bản beta trên OP Mainnet. Tài sản chỉ để test.",
+    en: "Beta build on Optimism Mainnet.",
+    vi: "Bản beta trên Optimism Mainnet.",
   },
 
   epoch: { en: "Epoch", vi: "Epoch" },

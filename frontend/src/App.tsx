@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { TopBar } from "./components/TopBar";
+import { Footer } from "./components/Footer";
 import { Info } from "./pages/Info";
 import { Mint } from "./pages/Mint";
 import { Burn } from "./pages/Burn";
@@ -7,9 +8,9 @@ import { AdminPage } from "./pages/AdminPage";
 
 export default function App() {
   return (
-    <div className="min-h-screen">
+    <div className="flex min-h-screen flex-col">
       <TopBar />
-      <main className="mx-auto max-w-content px-5 py-6">
+      <main className="mx-auto w-full max-w-content flex-1 px-5 py-6">
         <Routes>
           <Route path="/" element={<Navigate to="/info" replace />} />
           <Route path="/info" element={<Info />} />
@@ -21,6 +22,7 @@ export default function App() {
           <Route path="*" element={<Navigate to="/info" replace />} />
         </Routes>
       </main>
+      <Footer />
     </div>
   );
 }
