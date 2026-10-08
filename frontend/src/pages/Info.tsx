@@ -47,8 +47,11 @@ export function Info() {
   const epochStart = useEpochStart(d.currentEpoch);
   const { points } = useHistory();
 
-  const pricePoints = points.map((p) => ({ label: `Epoch ${p.epoch}`, value: p.rate }));
-  const supplyPoints = points.map((p) => ({ label: `Epoch ${p.epoch}`, value: p.supply }));
+  const CHART_START_EPOCH = 11;
+  const chartPoints = points.filter((p) => p.epoch >= CHART_START_EPOCH);
+
+  const pricePoints = chartPoints.map((p) => ({ label: `Epoch ${p.epoch}`, value: p.rate }));
+  const supplyPoints = chartPoints.map((p) => ({ label: `Epoch ${p.epoch}`, value: p.supply }));
 
   const nav = d.totalNav !== undefined ? `${format6(d.totalNav)} USDC` : "-";
   const supply = d.totalSupply !== undefined ? `${format6(d.totalSupply)} ${SHARE.symbol}` : "-";
